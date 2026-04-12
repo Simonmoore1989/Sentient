@@ -1,0 +1,13 @@
+Task ID,Task Name,Start Date,End Date,Duration,Dependencies,Status
+T-001,Isolation & Lockout,12/05/2025,13/05/2025,16,None,Complete
+T-002,Vessel Internal Inspection,13/05/2025,14/05/2025,8,T-001,Complete
+T-003,Main Drive Bearing Replacement,14/05/2025,16/05/2025,32,"T-001,T-002",In Progress
+T-004,Conveyor Belt Tensioner Service,14/05/2025,15/05/2025,12,T-001,In Progress
+T-005,SAG Mill Liner Change,13/05/2025,17/05/2025,48,"T-002,T-003",Delayed
+T-006,Pump Station Overhaul,15/05/2025,16/05/2025,18,T-003,Delayed
+T-007,Electrical Panel Upgrade,14/05/2025,15/05/2025,10,T-001,In Progress
+T-008,Crusher Jaw Plate Swap,16/05/2025,17/05/2025,14,T-005,Yet To Start
+T-009,Tailings Line Flush & Test,17/05/2025,18/05/2025,6,"T-004,T-006",Yet To Start
+T-010,Gearbox Oil Change Unit 3,12/05/2025,13/05/2025,4,None,Complete
+T-011,Fire Suppression Test,18/05/2025,18/05/2025,3,"T-007,T-009",Yet To Start
+T-012,Final Commissioning & Handover,19/05/2025,19/05/2025,8,"T-008,T-009,T-011",Yet To Start

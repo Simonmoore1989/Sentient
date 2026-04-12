@@ -1,9 +1,18 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Overview() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [clientName, setClientName] = useState('');
+  const [revision, setRevision] = useState('');
+  const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    setClientName(localStorage.getItem('client') || 'Client');
+    setRevision(localStorage.getItem('revision') || 'Revision');
+  }, []);
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
@@ -173,12 +182,13 @@ export default function Overview() {
               </svg>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1.1 }}>Sentient <span style={{ color: '#2E4050', fontWeight: 400 }}>|</span> Hancock</span>
+              <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1.1 }}>
+                Sentient <span style={{ color: '#2E4050', fontWeight: 400 }}>|</span> {clientName}
+              </span>
               <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '6px', fontWeight: 700, letterSpacing: '0.32em', textTransform: 'uppercase', color: '#2ECC9A', whiteSpace: 'nowrap' }}>Execution Intelligence</span>
             </div>
           </div>
 
-          {/* Hamburger Menu */}
           <div className="menu-container" style={{ position: 'relative' }}>
             <button
               onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
@@ -193,13 +203,21 @@ export default function Overview() {
             {menuOpen && (
               <div onClick={e => e.stopPropagation()} style={{ position: 'fixed', top: 60, right: 20, background: '#0E1419', border: '1px solid #1E2A35', borderRadius: 8, padding: 6, minWidth: 200, zIndex: 99999, boxShadow: '0 16px 48px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {menuItems.map(item => (
-                  <div key={item.label} className="menu-item" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 5, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#5A7080', cursor: 'pointer' }}>
+                  <div
+                    key={item.label}
+                    className="menu-item"
+                    onClick={() => {
+                      if (item.label === 'Dashboard') router.push('/dashboard');
+                    }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 5, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#5A7080', cursor: 'pointer' }}>
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d={item.icon}/></svg>
                     {item.label}
                   </div>
                 ))}
                 <div style={{ height: 1, background: '#1E2A35', margin: '4px 0' }}></div>
-                <div className="menu-item menu-item-danger" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 5, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#E05A5A', cursor: 'pointer' }}>
+                <div className="menu-item menu-item-danger"
+                  onClick={() => router.push('/')}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 5, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#E05A5A', cursor: 'pointer' }}>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
                   New Session
                 </div>
@@ -225,7 +243,7 @@ export default function Overview() {
               Shutdown Overview
             </div>
             <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 32, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-              SFT<span style={{ color: '#2ECC9A' }}>2601</span>
+              <span style={{ color: '#E8EDF2' }}>{revision.slice(0, -4)}</span><span style={{ color: '#2ECC9A' }}>{revision.slice(-4)}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
               {[['12 May 06:00', 'Start'], ['19 May 18:00', 'Finish'], ['168 hrs', 'Duration'], ['1,840 hrs', 'Total Resource Hours']].map(([val, label]) => (
@@ -248,17 +266,15 @@ export default function Overview() {
               </button>
             </div>
 
-            {/* Welcome message */}
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700, color: '#E8EDF2', marginBottom: 8 }}>
                 {getGreeting()}, welcome back.
               </div>
               <div style={{ fontSize: 11, color: '#5A7080', lineHeight: 1.7, letterSpacing: '0.02em' }}>
-                <span style={{ color: '#2ECC9A', fontWeight: 600 }}>SFT2601</span> is underway for <span style={{ color: '#E8EDF2' }}>Hancock</span>. You are currently <span style={{ color: '#E05A5A', fontWeight: 600 }}>22.4 hrs behind</span> planned schedule. Review the S-Curve below and use AI recommendations to reflow your schedule before entering the dashboard.
+                <span style={{ color: '#2ECC9A', fontWeight: 600 }}>{revision}</span> is underway for <span style={{ color: '#E8EDF2' }}>{clientName}</span>. You are currently <span style={{ color: '#E05A5A', fontWeight: 600 }}>22.4 hrs behind</span> planned schedule. Review the S-Curve below and use AI recommendations to reflow your schedule before entering the dashboard.
               </div>
             </div>
 
-            {/* Dimmed preview bullets */}
             <div style={{ opacity: 0.35, display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
               {[
                 'T-005 SAG Mill delay impacting 3 downstream tasks — recommend pulling T-008 forward to Day 5.',
@@ -272,7 +288,6 @@ export default function Overview() {
               ))}
             </div>
 
-            {/* Reflow button */}
             <div style={{ paddingTop: 14, borderTop: '1px solid #1E2A35' }}>
               <button disabled style={{ width: '100%', padding: '11px 16px', background: 'transparent', border: '1px solid #2ECC9A', borderRadius: 8, color: '#2ECC9A', fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'not-allowed', opacity: 0.35, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
@@ -346,7 +361,9 @@ export default function Overview() {
           </div>
 
           {/* Enter Dashboard */}
-          <button style={{ width: '100%', padding: 15, background: '#2ECC9A', color: '#040D0A', border: 'none', borderRadius: 8, fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', cursor: 'pointer' }}>
+          <button
+            onClick={() => router.push('/dashboard')}
+            style={{ width: '100%', padding: 15, background: '#2ECC9A', color: '#040D0A', border: 'none', borderRadius: 8, fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', cursor: 'pointer' }}>
             Enter Dashboard →
           </button>
 

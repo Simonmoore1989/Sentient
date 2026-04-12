@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [client, setClient] = useState('');
@@ -8,6 +9,7 @@ export default function Home() {
   const [dragOver, setDragOver] = useState(false);
 
   const isReady = client && revision && file;
+  const router = useRouter();
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
@@ -145,6 +147,11 @@ export default function Home() {
               {/* Execute */}
               <button
                 disabled={!isReady}
+                onClick={() => {
+  localStorage.setItem('client', client);
+  localStorage.setItem('revision', revision);
+  router.push('/overview');
+}}
                 style={{
                   ...fieldStyle,
                   border: isReady ? 'none' : '1px solid #1E2A35',
