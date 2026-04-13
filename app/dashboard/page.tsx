@@ -182,7 +182,11 @@ useEffect(() => {
               <div onClick={e => e.stopPropagation()} style={{ position: 'fixed', top: 60, right: 20, background: '#0E1419', border: '1px solid #1E2A35', borderRadius: 8, padding: 6, minWidth: 200, zIndex: 99999, boxShadow: '0 16px 48px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {menuItems.map(item => (
   <div key={item.label} className="menu-item"
-    onClick={() => { if (item.label === 'Overview') router.push('/overview'); }}
+  onClick={() => {
+    if (item.label === 'Overview') router.push('/overview');
+    if (item.label === 'Upload New Schedule') router.push('/');
+    if (item.label === 'Vendor Setup') router.push('/vendor-setup');
+  }}
     style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 5, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#5A7080', cursor: 'pointer' }}>
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d={item.icon}/></svg>
     {item.label}

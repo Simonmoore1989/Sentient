@@ -207,7 +207,10 @@ export default function Overview() {
                     key={item.label}
                     className="menu-item"
                     onClick={() => {
-                      if (item.label === 'Dashboard') router.push('/dashboard');
+                  
+  if (item.label === 'Dashboard') router.push('/dashboard');
+  if (item.label === 'Upload New Schedule') router.push('/');
+  if (item.label === 'Vendor Setup') router.push('/vendor-setup');
                     }}
                     style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 5, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#5A7080', cursor: 'pointer' }}>
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d={item.icon}/></svg>
