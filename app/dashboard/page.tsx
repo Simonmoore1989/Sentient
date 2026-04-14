@@ -3,18 +3,18 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 const tasks = [
-  { id:'T-001', name:'Isolation & Lockout', area:'Electrical', team:'Linkforce T1', status:'COMPLETE', start:'12 May 06:00', end:'13 May 22:00', duration:'16h', progress:100, deps:[] },
-  { id:'T-002', name:'Vessel Internal Inspection', area:'Pressure Systems', team:'Linkforce T2', status:'COMPLETE', start:'13 May 06:00', end:'14 May 14:00', duration:'8h', progress:100, deps:['T-001'] },
-  { id:'T-003', name:'Main Drive Bearing Replacement', area:'Mechanical', team:'Linkforce T1', status:'IN PROGRESS', start:'14 May 06:00', end:'16 May 14:00', duration:'32h', progress:62, deps:['T-001','T-002'] },
-  { id:'T-004', name:'Conveyor Belt Tensioner Service', area:'Mechanical', team:'Linkforce T2', status:'IN PROGRESS', start:'14 May 06:00', end:'15 May 18:00', duration:'12h', progress:40, deps:['T-001'] },
-  { id:'T-005', name:'SAG Mill Liner Change', area:'Grinding', team:'Linkforce T2', status:'DELAYED', start:'13 May 06:00', end:'17 May 06:00', duration:'48h', progress:28, deps:['T-002','T-003'] },
-  { id:'T-006', name:'Pump Station Overhaul', area:'Hydraulics', team:'Linkforce T3', status:'DELAYED', start:'15 May 06:00', end:'16 May 00:00', duration:'18h', progress:10, deps:['T-003'] },
-  { id:'T-007', name:'Electrical Panel Upgrade', area:'Electrical', team:'Linkforce T1', status:'IN PROGRESS', start:'14 May 06:00', end:'15 May 16:00', duration:'10h', progress:75, deps:['T-001'] },
-  { id:'T-008', name:'Crusher Jaw Plate Swap', area:'Crushing', team:'Linkforce T2', status:'PENDING', start:'16 May 06:00', end:'17 May 20:00', duration:'14h', progress:0, deps:['T-005'] },
-  { id:'T-009', name:'Tailings Line Flush & Test', area:'Process', team:'Linkforce T3', status:'PENDING', start:'17 May 06:00', end:'18 May 12:00', duration:'6h', progress:0, deps:['T-004','T-006'] },
-  { id:'T-010', name:'Gearbox Oil Change — Unit 3', area:'Mechanical', team:'Linkforce T1', status:'COMPLETE', start:'12 May 06:00', end:'13 May 10:00', duration:'4h', progress:100, deps:[] },
-  { id:'T-011', name:'Fire Suppression Test', area:'Safety', team:'Linkforce T2', status:'PENDING', start:'18 May 06:00', end:'18 May 09:00', duration:'3h', progress:0, deps:['T-007','T-009'] },
-  { id:'T-012', name:'Final Commissioning & Handover', area:'Management', team:'Linkforce T3', status:'PENDING', start:'19 May 06:00', end:'19 May 14:00', duration:'8h', progress:0, deps:['T-008','T-009','T-011'] },
+  { id:'T-001', wo:'WO-4421', name:'Isolation & Lockout', area:'Electrical', team:'Linkforce T1', status:'COMPLETE', start:'12 May 06:00', end:'13 May 22:00', duration:'16h', progress:100, deps:[] },
+  { id:'T-002', wo:'WO-4422', name:'Vessel Internal Inspection', area:'Pressure Systems', team:'Linkforce T2', status:'COMPLETE', start:'13 May 06:00', end:'14 May 14:00', duration:'8h', progress:100, deps:['T-001'] },
+  { id:'T-003', wo:'WO-4423', name:'Main Drive Bearing Replacement', area:'Mechanical', team:'Linkforce T1', status:'IN PROGRESS', start:'14 May 06:00', end:'16 May 14:00', duration:'32h', progress:62, deps:['T-001','T-002'] },
+  { id:'T-004', wo:'WO-4424', name:'Conveyor Belt Tensioner Service', area:'Mechanical', team:'Linkforce T2', status:'IN PROGRESS', start:'14 May 06:00', end:'15 May 18:00', duration:'12h', progress:40, deps:['T-001'] },
+  { id:'T-005', wo:'WO-4425', name:'SAG Mill Liner Change', area:'Grinding', team:'Linkforce T2', status:'DELAYED', start:'13 May 06:00', end:'17 May 06:00', duration:'48h', progress:28, deps:['T-002','T-003'] },
+  { id:'T-006', wo:'WO-4426', name:'Pump Station Overhaul', area:'Hydraulics', team:'Linkforce T3', status:'DELAYED', start:'15 May 06:00', end:'16 May 00:00', duration:'18h', progress:10, deps:['T-003'] },
+  { id:'T-007', wo:'WO-4427', name:'Electrical Panel Upgrade', area:'Electrical', team:'Linkforce T1', status:'IN PROGRESS', start:'14 May 06:00', end:'15 May 16:00', duration:'10h', progress:75, deps:['T-001'] },
+  { id:'T-008', wo:'WO-4428', name:'Crusher Jaw Plate Swap', area:'Crushing', team:'Linkforce T2', status:'PENDING', start:'16 May 06:00', end:'17 May 20:00', duration:'14h', progress:0, deps:['T-005'] },
+  { id:'T-009', wo:'WO-4429', name:'Tailings Line Flush & Test', area:'Process', team:'Linkforce T3', status:'PENDING', start:'17 May 06:00', end:'18 May 12:00', duration:'6h', progress:0, deps:['T-004','T-006'] },
+  { id:'T-010', wo:'WO-4430', name:'Gearbox Oil Change — Unit 3', area:'Mechanical', team:'Linkforce T1', status:'COMPLETE', start:'12 May 06:00', end:'13 May 10:00', duration:'4h', progress:100, deps:[] },
+  { id:'T-011', wo:'WO-4431', name:'Fire Suppression Test', area:'Safety', team:'Linkforce T2', status:'PENDING', start:'18 May 06:00', end:'18 May 09:00', duration:'3h', progress:0, deps:['T-007','T-009'] },
+  { id:'T-012', wo:'WO-4432', name:'Final Commissioning & Handover', area:'Management', team:'Linkforce T3', status:'PENDING', start:'19 May 06:00', end:'19 May 14:00', duration:'8h', progress:0, deps:['T-008','T-009','T-011'] },
 ];
 
 const statusMap: Record<string, { label: string; color: string; bg: string; glow?: string }> = {
@@ -94,17 +94,20 @@ function ColDropdown({ col, filters, setFilters, openCol, setOpenCol }: {
 }
 
 export default function Dashboard() {
-    const router = useRouter();
-    const [clientName, setClientName] = useState('');
-
-useEffect(() => {
-  setClientName(localStorage.getItem('client') || 'Client');
-}, []);
+  const router = useRouter();
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [search, setSearch] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [openCol, setOpenCol] = useState<string | null>(null);
   const [colFilters, setColFilters] = useState<ColFilter>({ id: [], name: [], team: [] });
+  const [clientName, setClientName] = useState('');
+  const [darkMode, setDarkMode] = useState(true);
+
+  useEffect(() => {
+    setClientName(localStorage.getItem('client') || 'Client');
+    const saved = localStorage.getItem('darkMode');
+    if (saved !== null) setDarkMode(saved === 'true');
+  }, []);
 
   const filtered = tasks.filter(t => {
     const matchFilter = activeFilter === 'ALL' || t.status === activeFilter ||
@@ -120,41 +123,43 @@ useEffect(() => {
   });
 
   const menuItems = [
-    { label: 'Overview', icon: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z' },
-    { label: 'Upload New Schedule', icon: 'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12' },
-    { label: 'Reports', icon: 'M22 12h-4l-3 9L9 3l-3 9H2' },
-    { label: 'Vendor Setup', icon: 'M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71' },
+    { label: 'Overview', icon: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z', path: '/overview' },
+    { label: 'Upload New Schedule', icon: 'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12', path: '/' },
+    { label: 'Reports', icon: 'M22 12h-4l-3 9L9 3l-3 9H2', path: null },
+    { label: 'Vendor Setup', icon: 'M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71', path: '/vendor-setup' },
   ];
+
+  // Light/dark theme values
+  const t = darkMode ? {
+    bg: '#080C0F', surface: '#0E1419', surface2: '#141B22',
+    border: '#1E2A35', textPrimary: '#E8EDF2', textSecondary: '#5A7080', textMuted: '#2E4050',
+    headerBg: '#080C0F', menuBg: '#0E1419',
+  } : {
+    bg: '#F4F6F8', surface: '#FFFFFF', surface2: '#EDF0F3',
+    border: '#D8DEE5', textPrimary: '#0D1318', textSecondary: '#4A5D6B', textMuted: '#8FA0AE',
+    headerBg: '#FFFFFF', menuBg: '#FFFFFF',
+  };
 
   return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { height: 100%; background: #080C0F; }
-        body::before {
-          content: '';
-          position: fixed; inset: 0;
-          background-image:
-            linear-gradient(rgba(46,204,154,0.025) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(46,204,154,0.025) 1px, transparent 1px);
-          background-size: 48px 48px;
-          pointer-events: none; z-index: 0;
-        }
+        html, body { height: 100%; background: ${t.bg}; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
         .filter-btn:hover { border-color: #2ECC9A !important; color: #2ECC9A !important; }
-        .task-row:hover { background: #0E1419 !important; }
-        .menu-item:hover { background: #141B22 !important; }
+        .task-row:hover { background: ${t.surface} !important; }
+        .menu-item:hover { background: ${t.surface2} !important; }
         .menu-item-danger:hover { background: rgba(224,90,90,0.08) !important; }
       `}</style>
 
       <div
-        style={{ position: 'relative', zIndex: 1, height: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'DM Mono', monospace", color: '#E8EDF2' }}
+        style={{ position: 'relative', zIndex: 1, height: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'DM Mono', monospace", color: t.textPrimary, background: t.bg }}
         onClick={() => { setMenuOpen(false); setOpenCol(null); }}
       >
 
         {/* Header */}
-        <header style={{ padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1E2A35', flexShrink: 0 }}>
+        <header style={{ padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${t.border}`, flexShrink: 0, background: t.headerBg }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 24, height: 24, border: '1.5px solid #2ECC9A', borderRadius: 5, display: 'grid', placeItems: 'center', background: 'rgba(46,204,154,0.1)' }}>
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#2ECC9A" strokeWidth="1.5">
@@ -163,14 +168,17 @@ useEffect(() => {
               </svg>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1.1 }}>Sentient <span style={{ color: '#2E4050', fontWeight: 400 }}>|</span> {clientName}</span>
+              <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1.1, color: t.textPrimary }}>
+                Sentient <span style={{ color: t.textMuted, fontWeight: 400 }}>|</span> {clientName}
+              </span>
               <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '6px', fontWeight: 700, letterSpacing: '0.32em', textTransform: 'uppercase', color: '#2ECC9A', whiteSpace: 'nowrap' }}>Execution Intelligence</span>
             </div>
           </div>
+
           <div style={{ position: 'relative' }}>
             <button
               onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
-              style={{ padding: '8px 10px', background: 'transparent', border: '1px solid #1E2A35', borderRadius: 6, color: '#5A7080', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+              style={{ padding: '8px 10px', background: 'transparent', border: `1px solid ${t.border}`, borderRadius: 6, color: t.textSecondary, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="3" y1="6" x2="21" y2="6"/>
@@ -179,23 +187,32 @@ useEffect(() => {
               </svg>
             </button>
             {menuOpen && (
-              <div onClick={e => e.stopPropagation()} style={{ position: 'fixed', top: 60, right: 20, background: '#0E1419', border: '1px solid #1E2A35', borderRadius: 8, padding: 6, minWidth: 200, zIndex: 99999, boxShadow: '0 16px 48px rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <div onClick={e => e.stopPropagation()} style={{ position: 'fixed', top: 60, right: 20, background: t.menuBg, border: `1px solid ${t.border}`, borderRadius: 8, padding: 6, minWidth: 200, zIndex: 99999, boxShadow: '0 16px 48px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {menuItems.map(item => (
-  <div key={item.label} className="menu-item"
-  onClick={() => {
-    if (item.label === 'Overview') router.push('/overview');
-    if (item.label === 'Upload New Schedule') router.push('/');
-    if (item.label === 'Vendor Setup') router.push('/vendor-setup');
-  }}
-    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 5, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#5A7080', cursor: 'pointer' }}>
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d={item.icon}/></svg>
-    {item.label}
-  </div>
-))}
-                <div style={{ height: 1, background: '#1E2A35', margin: '4px 0' }}></div>
-                <div className="menu-item menu-item-danger" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 5, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#E05A5A', cursor: 'pointer' }}>
+                  <div key={item.label} className="menu-item"
+                    onClick={() => { if (item.path) router.push(item.path); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 5, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: t.textSecondary, cursor: 'pointer' }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d={item.icon}/></svg>
+                    {item.label}
+                  </div>
+                ))}
+                <div style={{ height: 1, background: t.border, margin: '4px 0' }}></div>
+                <div className="menu-item menu-item-danger"
+                  onClick={() => router.push('/')}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 5, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#E05A5A', cursor: 'pointer' }}>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
                   New Session
+                </div>
+                <div style={{ height: 1, background: t.border, margin: '4px 0' }}></div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px' }} onClick={e => e.stopPropagation()}>
+                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: t.textSecondary }}>{darkMode ? 'Dark Mode' : 'Light Mode'}</span>
+                  <div onClick={() => {
+  const next = !darkMode;
+  setDarkMode(next);
+  localStorage.setItem('darkMode', String(next));
+}} style={{ width: 40, height: 22, background: darkMode ? '#141B22' : 'rgba(46,204,154,0.15)', border: `1px solid ${darkMode ? t.border : '#2ECC9A'}`, borderRadius: 100, position: 'relative', cursor: 'pointer', transition: 'all 0.3s' }}>
+                    <div style={{ position: 'absolute', top: 2, left: darkMode ? 2 : 20, width: 16, height: 16, borderRadius: '50%', background: darkMode ? t.textMuted : '#2ECC9A', transition: 'all 0.3s' }}></div>
+                  </div>
                 </div>
               </div>
             )}
@@ -203,18 +220,18 @@ useEffect(() => {
         </header>
 
         {/* Stats Bar */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', borderBottom: '1px solid #1E2A35', flexShrink: 0 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', borderBottom: `1px solid ${t.border}`, flexShrink: 0, background: t.bg }}>
           {[
-            { label: 'Total Tasks', value: '248', color: '#E8EDF2', bar: '#2E4050', width: '100%' },
+            { label: 'Total Tasks', value: '248', color: t.textPrimary, bar: t.textMuted, width: '100%' },
             { label: 'Complete', value: '91', color: '#2ECC9A', bar: '#2ECC9A', width: '37%' },
             { label: 'In Progress', value: '44', color: '#4A9EE0', bar: '#4A9EE0', width: '18%' },
             { label: 'Delayed', value: '12', color: '#E05A5A', bar: '#E05A5A', width: '5%' },
-            { label: 'Yet To Start', value: '101', color: '#5A7080', bar: '#2E4050', width: '41%' },
+            { label: 'Yet To Start', value: '101', color: t.textSecondary, bar: t.textMuted, width: '41%' },
           ].map((s, i) => (
-            <div key={i} style={{ padding: '14px 24px', borderRight: i < 4 ? '1px solid #1E2A35' : 'none' }}>
-              <div style={{ fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#2E4050', marginBottom: 4 }}>{s.label}</div>
+            <div key={i} style={{ padding: '14px 24px', borderRight: i < 4 ? `1px solid ${t.border}` : 'none' }}>
+              <div style={{ fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.textMuted, marginBottom: 4 }}>{s.label}</div>
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: s.color }}>{s.value}</div>
-              <div style={{ height: 2, background: '#1E2A35', borderRadius: 2, marginTop: 6, overflow: 'hidden' }}>
+              <div style={{ height: 2, background: t.border, borderRadius: 2, marginTop: 6, overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: s.width, background: s.bar, borderRadius: 2 }}></div>
               </div>
             </div>
@@ -222,7 +239,7 @@ useEffect(() => {
         </div>
 
         {/* Toolbar */}
-        <div style={{ padding: '12px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1E2A35', flexShrink: 0, gap: 16 }}>
+        <div style={{ padding: '12px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${t.border}`, flexShrink: 0, gap: 16, background: t.bg }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {[
               { label: 'All', value: 'ALL' },
@@ -237,9 +254,9 @@ useEffect(() => {
                 onClick={() => setActiveFilter(f.value)}
                 style={{
                   padding: '5px 14px',
-                  border: `1px solid ${activeFilter === f.value ? '#2ECC9A' : '#1E2A35'}`,
+                  border: `1px solid ${activeFilter === f.value ? '#2ECC9A' : t.border}`,
                   borderRadius: 100,
-                  color: activeFilter === f.value ? '#2ECC9A' : '#5A7080',
+                  color: activeFilter === f.value ? '#2ECC9A' : t.textSecondary,
                   fontFamily: "'Syne', sans-serif",
                   fontSize: 9, fontWeight: 700,
                   letterSpacing: '0.15em', textTransform: 'uppercase',
@@ -256,18 +273,19 @@ useEffect(() => {
             placeholder="Search tasks..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ background: '#141B22', border: '1px solid #1E2A35', borderRadius: 6, padding: '7px 12px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#E8EDF2', outline: 'none', width: 200 }}
+            style={{ background: t.surface2, border: `1px solid ${t.border}`, borderRadius: 6, padding: '7px 12px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: t.textPrimary, outline: 'none', width: 200 }}
           />
         </div>
 
         {/* Table */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div style={{ flex: 1, overflowY: 'auto', background: t.bg }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #1E2A35', position: 'sticky', top: 0, background: '#080C0F', zIndex: 2 }}>
+              <tr style={{ borderBottom: `1px solid ${t.border}`, position: 'sticky', top: 0, background: t.bg, zIndex: 2 }}>
                 <th style={{ padding: '12px 16px 12px 32px', textAlign: 'left', whiteSpace: 'nowrap' }}>
                   <ColDropdown col="id" filters={colFilters} setFilters={setColFilters} openCol={openCol} setOpenCol={setOpenCol} />
                 </th>
+                <th style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.textMuted, whiteSpace: 'nowrap' }}>WO</th>
                 <th style={{ padding: '12px 16px', textAlign: 'left', whiteSpace: 'nowrap' }}>
                   <ColDropdown col="name" filters={colFilters} setFilters={setColFilters} openCol={openCol} setOpenCol={setOpenCol} />
                 </th>
@@ -275,36 +293,37 @@ useEffect(() => {
                   <ColDropdown col="team" filters={colFilters} setFilters={setColFilters} openCol={openCol} setOpenCol={setOpenCol} />
                 </th>
                 {['Status', 'Start / Finish', 'Duration', 'Dependencies'].map(h => (
-                  <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#2E4050', whiteSpace: 'nowrap' }}>{h}</th>
+                  <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: t.textMuted, whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.map(t => {
-                const s = statusMap[t.status] || statusMap['PENDING'];
+              {filtered.map(task => {
+                const s = statusMap[task.status] || statusMap['PENDING'];
                 return (
-                  <tr key={t.id} className="task-row" style={{ borderBottom: '1px solid #1E2A35', cursor: 'pointer' }}>
-                    <td style={{ padding: '14px 16px 14px 32px', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#2E4050' }}>{t.id}</td>
+                  <tr key={task.id} className="task-row" style={{ borderBottom: `1px solid ${t.border}`, cursor: 'pointer' }}>
+                    <td style={{ padding: '14px 16px 14px 32px', fontFamily: "'DM Mono', monospace", fontSize: 10, color: t.textMuted }}>{task.id}</td>
+                    <td style={{ padding: '14px 16px', fontFamily: "'DM Mono', monospace", fontSize: 10, color: t.textMuted }}>{task.wo}</td>
                     <td style={{ padding: '14px 16px' }}>
-                      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 600, color: '#E8EDF2' }}>{t.name}</div>
-                      <div style={{ fontSize: 10, color: '#2E4050', marginTop: 2 }}>{t.area}</div>
+                      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 600, color: t.textPrimary }}>{task.name}</div>
+                      <div style={{ fontSize: 10, color: t.textMuted, marginTop: 2 }}>{task.area}</div>
                     </td>
-                    <td style={{ padding: '14px 16px', fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, color: '#5A7080', letterSpacing: '0.08em' }}>{t.team}</td>
+                    <td style={{ padding: '14px 16px', fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, color: t.textSecondary, letterSpacing: '0.08em' }}>{task.team}</td>
                     <td style={{ padding: '14px 16px' }}>
-                      <div style={{ position: 'relative', width: 160, height: 18, borderRadius: 4, overflow: 'hidden', background: '#141B22' }}>
-                        <div style={{ position: 'absolute', inset: 0, width: `${t.progress}%`, background: s.bg, borderRadius: 4 }}></div>
+                      <div style={{ position: 'relative', width: 160, height: 18, borderRadius: 4, overflow: 'hidden', background: t.surface2 }}>
+                        <div style={{ position: 'absolute', inset: 0, width: `${task.progress}%`, background: s.bg, borderRadius: 4 }}></div>
                         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 8px', gap: 5 }}>
                           <div style={{ width: 5, height: 5, borderRadius: '50%', background: s.color, boxShadow: s.glow ? `0 0 4px ${s.glow}` : 'none', animation: s.glow ? 'pulse 2s infinite' : 'none', flexShrink: 0 }}></div>
-                          <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: s.color }}>{s.label} — {t.progress}%</span>
+                          <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: s.color }}>{s.label} — {task.progress}%</span>
                         </div>
                       </div>
                     </td>
-                    <td style={{ padding: '14px 16px', fontSize: 11, color: '#5A7080' }}>{t.start} / {t.end}</td>
-                    <td style={{ padding: '14px 16px', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#5A7080' }}>{t.duration}</td>
+                    <td style={{ padding: '14px 16px', fontSize: 11, color: t.textSecondary }}>{task.start} / {task.end}</td>
+                    <td style={{ padding: '14px 16px', fontFamily: "'DM Mono', monospace", fontSize: 10, color: t.textSecondary }}>{task.duration}</td>
                     <td style={{ padding: '14px 16px' }}>
-                      {t.deps.length > 0 ? t.deps.map(d => (
-                        <span key={d} style={{ display: 'inline-block', padding: '2px 7px', background: '#141B22', border: '1px solid #1E2A35', borderRadius: 4, fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#2E4050', marginRight: 3 }}>{d}</span>
-                      )) : <span style={{ fontSize: 10, color: '#2E4050' }}>—</span>}
+                      {task.deps.length > 0 ? task.deps.map(d => (
+                        <span key={d} style={{ display: 'inline-block', padding: '2px 7px', background: t.surface2, border: `1px solid ${t.border}`, borderRadius: 4, fontFamily: "'DM Mono', monospace", fontSize: 9, color: t.textMuted, marginRight: 3 }}>{d}</span>
+                      )) : <span style={{ fontSize: 10, color: t.textMuted }}>—</span>}
                     </td>
                   </tr>
                 );
@@ -314,9 +333,9 @@ useEffect(() => {
         </div>
 
         {/* Footer */}
-        <footer style={{ padding: '10px 32px', borderTop: '1px solid #1E2A35', display: 'flex', justifyContent: 'space-between', flexShrink: 0 }}>
-          <span style={{ fontSize: 10, color: '#2E4050', letterSpacing: '0.1em' }}>SENTIENT V0.1 — MVP</span>
-          <span style={{ fontSize: 10, color: '#2E4050', letterSpacing: '0.1em' }}>Showing {filtered.length} of {tasks.length} tasks</span>
+        <footer style={{ padding: '10px 32px', borderTop: `1px solid ${t.border}`, display: 'flex', justifyContent: 'space-between', flexShrink: 0, background: t.bg }}>
+          <span style={{ fontSize: 10, color: t.textMuted, letterSpacing: '0.1em' }}>SENTIENT V0.1 — MVP</span>
+          <span style={{ fontSize: 10, color: t.textMuted, letterSpacing: '0.1em' }}>Showing {filtered.length} of {tasks.length} tasks</span>
         </footer>
 
       </div>
