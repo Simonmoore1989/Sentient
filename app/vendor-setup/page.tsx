@@ -56,10 +56,10 @@ export default function VendorSetup() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [expandedVendors, setExpandedVendors] = useState<string[]>([]);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
-  const [generatedLinks, setGeneratedLinks] = useState<Record<string, string>>({});
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [sentFlash, setSentFlash] = useState<string | null>(null);
   const [notifPermission, setNotifPermission] = useState('default');
+  const [promptMode, setPromptMode] = useState<'manual' | 'automatic'>('manual');
+  const [promptInterval, setPromptInterval] = useState(2);
   const [emailModal, setEmailModal] = useState<{ role: string; link: string } | null>(null);
   const [emailInput, setEmailInput] = useState('');
 
@@ -98,17 +98,6 @@ export default function VendorSetup() {
     );
   }
 
-  function generateLink(teamId: string) {
-    const base = window.location.origin;
-    setGeneratedLinks(prev => ({ ...prev, [teamId]: `${base}/vendor?team=${teamId}` }));
-  }
-
-  function copyLink(teamId: string) {
-    navigator.clipboard.writeText(generatedLinks[teamId]);
-    setCopiedId(teamId);
-    setTimeout(() => setCopiedId(null), 2000);
-  }
-
   function getCombinedLink() {
     const base = window.location.origin;
     return `${base}/vendor?teams=${selectedTeams.join(',')}`;
@@ -130,7 +119,7 @@ export default function VendorSetup() {
   const menuItems = [
     { label: 'Overview', icon: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z', path: '/overview' },
     { label: 'Dashboard', icon: 'M3 3h18v18H3zM3 9h18M9 3v18', path: '/dashboard' },
-    { label: 'Reports', icon: 'M22 12h-4l-3 9L9 3l-3 9H2', path: null },
+    { label: 'Reports', icon: 'M22 12h-4l-3 9L9 3l-3 9H2', path: '/reports' },
   ];
 
   return (
@@ -154,6 +143,7 @@ export default function VendorSetup() {
         .vendor-row:hover { background: rgba(255,255,255,0.01) !important; }
         .send-btn:hover { border-color: #2ECC9A !important; color: #2ECC9A !important; background: rgba(46,204,154,0.06) !important; }
         input::placeholder { color: #2E4050; }
+        select option { background: #141B22; color: #E8EDF2; }
       `}</style>
 
       {/* Email Modal */}
@@ -230,6 +220,7 @@ export default function VendorSetup() {
         style={{ position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'DM Mono', monospace", color: '#E8EDF2', paddingBottom: selectedTeams.length > 0 ? 160 : 0 }}
         onClick={() => setMenuOpen(false)}
       >
+        {/* Header */}
         <header style={{ padding: '20px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1E2A35', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 24, height: 24, border: '1.5px solid #2ECC9A', borderRadius: 5, display: 'grid', placeItems: 'center', background: 'rgba(46,204,154,0.1)' }}>
@@ -271,6 +262,7 @@ export default function VendorSetup() {
           </div>
         </header>
 
+        {/* Main */}
         <main style={{ flex: 1, padding: '32px', display: 'flex', flexDirection: 'column', gap: 24 }}>
 
           <div>
@@ -286,6 +278,7 @@ export default function VendorSetup() {
             </div>
           </div>
 
+          {/* Notification permission */}
           {notifPermission !== 'granted' && (
             <div style={{ background: 'rgba(74,158,224,0.06)', border: '1px solid rgba(74,158,224,0.2)', borderRadius: 8, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
@@ -301,13 +294,40 @@ export default function VendorSetup() {
             </div>
           )}
 
+          {/* Notification settings */}
           {notifPermission === 'granted' && (
-            <div style={{ background: 'rgba(46,204,154,0.06)', border: '1px solid rgba(46,204,154,0.15)', borderRadius: 8, padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2ECC9A', boxShadow: '0 0 6px #2ECC9A' }}></div>
-              <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#2ECC9A' }}>Push Notifications Enabled</span>
+            <div style={{ background: 'rgba(46,204,154,0.06)', border: '1px solid rgba(46,204,154,0.15)', borderRadius: 8, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2ECC9A', boxShadow: '0 0 6px #2ECC9A' }}></div>
+                <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#2ECC9A' }}>Push Notifications Enabled</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button onClick={() => setPromptMode('manual')} style={{ padding: '6px 16px', borderRadius: 100, border: `1px solid ${promptMode === 'manual' ? '#2ECC9A' : '#1E2A35'}`, background: promptMode === 'manual' ? 'rgba(46,204,154,0.1)' : 'transparent', color: promptMode === 'manual' ? '#2ECC9A' : '#5A7080', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                  Manual
+                </button>
+                <button onClick={() => setPromptMode('automatic')} style={{ padding: '6px 16px', borderRadius: 100, border: `1px solid ${promptMode === 'automatic' ? '#2ECC9A' : '#1E2A35'}`, background: promptMode === 'automatic' ? 'rgba(46,204,154,0.1)' : 'transparent', color: promptMode === 'automatic' ? '#2ECC9A' : '#5A7080', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                  Automatic
+                </button>
+                {promptMode === 'automatic' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8 }}>
+                    <span style={{ fontSize: 9, color: '#5A7080', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: "'Syne', sans-serif", fontWeight: 700 }}>Every</span>
+                    <select value={promptInterval} onChange={e => setPromptInterval(Number(e.target.value))} style={{ background: '#141B22', border: '1px solid #2ECC9A', borderRadius: 6, padding: '6px 10px', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: '#2ECC9A', outline: 'none', cursor: 'pointer' }}>
+                      {Array.from({ length: 24 }, (_, i) => i + 1).map(h => (
+                        <option key={h} value={h}>{h} {h === 1 ? 'hr' : 'hrs'}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+              <div style={{ fontSize: 9, color: '#5A7080', letterSpacing: '0.08em' }}>
+                {promptMode === 'manual'
+                  ? 'Prompts will only be sent when you tap Send to DS or Send to NS.'
+                  : `Prompts will be sent automatically every ${promptInterval} ${promptInterval === 1 ? 'hour' : 'hours'} to selected teams.`}
+              </div>
             </div>
           )}
 
+          {/* Vendor list */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {vendors.map(vendor => {
               const isExpanded = expandedVendors.includes(vendor.id);
@@ -328,7 +348,6 @@ export default function VendorSetup() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                       {vendor.teams.map((team, idx) => {
                         const isSelected = selectedTeams.includes(team.id);
-                        const hasLink = !!generatedLinks[team.id];
                         return (
                           <div key={team.id} style={{ padding: '16px 24px', borderBottom: idx < vendor.teams.length - 1 ? '1px solid #1E2A35' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: isSelected ? 'rgba(46,204,154,0.03)' : 'transparent', transition: 'background 0.15s' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -340,22 +359,6 @@ export default function VendorSetup() {
                                 <div style={{ fontSize: 9, color: '#2E4050', marginTop: 1 }}>{team.tasks} tasks assigned</div>
                               </div>
                             </div>
-
-                            {!hasLink ? (
-                              <button className="send-btn" onClick={() => generateLink(team.id)} style={{ padding: '6px 12px', background: 'transparent', border: '1px solid #1E2A35', borderRadius: 6, color: '#5A7080', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
-                                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                                Generate Link
-                              </button>
-                            ) : (
-                              <div style={{ display: 'flex', gap: 6 }}>
-                                <div style={{ maxWidth: 180, background: '#141B22', border: '1px solid rgba(46,204,154,0.2)', borderRadius: 6, padding: '6px 10px', fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#2ECC9A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {generatedLinks[team.id]}
-                                </div>
-                                <button onClick={() => copyLink(team.id)} style={{ padding: '6px 10px', background: copiedId === team.id ? 'rgba(46,204,154,0.12)' : 'transparent', border: `1px solid ${copiedId === team.id ? '#2ECC9A' : '#1E2A35'}`, borderRadius: 6, color: copiedId === team.id ? '#2ECC9A' : '#5A7080', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
-                                  {copiedId === team.id ? '✓' : 'Copy'}
-                                </button>
-                              </div>
-                            )}
                           </div>
                         );
                       })}
