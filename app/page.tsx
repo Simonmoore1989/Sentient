@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
@@ -7,9 +7,9 @@ export default function Home() {
   const [revision, setRevision] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const router = useRouter();
 
   const isReady = client && revision && file;
-  const router = useRouter();
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
@@ -137,7 +137,6 @@ export default function Home() {
                     border: `1px dashed ${file ? 'rgba(46,204,154,0.3)' : dragOver ? '#2ECC9A' : '#1E2A35'}`,
                     color: file ? '#2ECC9A' : '#5A7080',
                     cursor: 'pointer',
-                    transition: 'border-color 0.2s, box-shadow 0.2s',
                   }}
                 >
                   {file ? file.name.toUpperCase() : 'SCHEDULE UPLOAD'}
@@ -148,10 +147,10 @@ export default function Home() {
               <button
                 disabled={!isReady}
                 onClick={() => {
-  localStorage.setItem('client', client);
-  localStorage.setItem('revision', revision);
-  router.push('/overview');
-}}
+                  localStorage.setItem('client', client);
+                  localStorage.setItem('revision', revision);
+                  router.push('/overview');
+                }}
                 style={{
                   ...fieldStyle,
                   border: isReady ? 'none' : '1px solid #1E2A35',
