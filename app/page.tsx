@@ -147,10 +147,110 @@ export default function Home() {
               <button
                 disabled={!isReady}
                 onClick={() => {
-                  localStorage.setItem('client', client);
-                  localStorage.setItem('revision', revision);
-                  router.push('/overview');
-                }}
+  localStorage.setItem('client', client);
+  localStorage.setItem('revision', revision);
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const lines = text.split('\n').filter(l => l.trim());
+      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      const idx = {
+        wo: headers.findIndex(h => h.toLowerCase().includes('order')),
+        op: headers.findIndex(h => h.toLowerCase().includes('operation')),
+        name: headers.findIndex(h => h.toLowerCase().includes('name')),
+        start: headers.findIndex(h => h.toLowerCase() === 'start'),
+        finish: headers.findIndex(h => h.toLowerCase() === 'finish'),
+        duration: headers.findIndex(h => h.toLowerCase().includes('duration')),
+        crew: headers.findIndex(h => h.toLowerCase().includes('crew')),
+        complete: headers.findIndex(h => h.toLowerCase().includes('complete')),
+      };
+
+      const rawRows = lines.slice(1).map(line => {
+        const cols = line.split(',').map(c => c.trim().replace(/"/g, ''));
+        return {
+          wo: idx.wo >= 0 ? cols[idx.wo] : '',
+          op: idx.op >= 0 ? cols[idx.op] : '',
+          name: idx.name >= 0 ? cols[idx.name] : '',
+          start: idx.start >= 0 ? cols[idx.start] : '',
+          end: idx.finish >= 0 ? cols[idx.finish] : '',
+          duration: idx.duration >= 0 ? cols[idx.duration] : '',
+          crew: idx.crew >= 0 ? cols[idx.crew] : '',
+          complete: idx.complete >= 0 ? cols[idx.complete] : '0',
+        };
+      }).filter(r => r.wo && r.name);
+
+      // Group into WO parents with op line children
+      const woMap: Record<string, any> = {};
+      const woOrder: string[] = [];
+
+      rawRows.forEach(row => {
+        const isParent = !row.op || row.op === '';
+        if (isParent) {
+          if (!woMap[row.wo]) {
+            woOrder.push(row.wo);
+            woMap[row.wo] = {
+              wo: row.wo,
+              name: row.name,
+              start: row.start,
+              end: row.end,
+              duration: row.duration,
+              crew: row.crew,
+              complete: parseFloat(row.complete) || 0,
+              ops: [],
+            };
+          }
+        } else {
+          if (!woMap[row.wo]) {
+            woOrder.push(row.wo);
+            woMap[row.wo] = {
+              wo: row.wo,
+              name: row.wo,
+              start: row.start,
+              end: row.end,
+              duration: row.duration,
+              crew: row.crew,
+              complete: 0,
+              ops: [],
+            };
+          }
+          woMap[row.wo].ops.push({
+            op: row.op,
+            name: row.name,
+            start: row.start,
+            end: row.end,
+            duration: row.duration,
+            crew: row.crew,
+            progress: Math.round(parseFloat(row.complete) || 0),
+          });
+        }
+      });
+
+      // Build final tasks array
+      const tasks = woOrder.map((wo, i) => {
+        const w = woMap[wo];
+        const progress = Math.round(w.complete);
+        const status = progress === 100 ? 'COMPLETE' : progress > 0 ? 'IN PROGRESS' : 'PENDING';
+        return {
+          id: `T-${String(i + 1).padStart(3, '0')}`,
+          wo: w.wo,
+          name: w.name,
+          start: w.start,
+          end: w.end,
+          duration: w.duration,
+          team: w.crew,
+          progress,
+          status,
+          ops: w.ops,
+        };
+      });
+
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      router.push('/overview');
+    };
+    reader.readAsText(file);
+  }
+}}
                 style={{
                   ...fieldStyle,
                   border: isReady ? 'none' : '1px solid #1E2A35',

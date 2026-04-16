@@ -1,13 +1,50 @@
-Task ID,Task Name,Start Date,End Date,Duration,Dependencies,Status
-T-001,Isolation & Lockout,12/05/2025,13/05/2025,16,None,Complete
-T-002,Vessel Internal Inspection,13/05/2025,14/05/2025,8,T-001,Complete
-T-003,Main Drive Bearing Replacement,14/05/2025,16/05/2025,32,"T-001,T-002",In Progress
-T-004,Conveyor Belt Tensioner Service,14/05/2025,15/05/2025,12,T-001,In Progress
-T-005,SAG Mill Liner Change,13/05/2025,17/05/2025,48,"T-002,T-003",Delayed
-T-006,Pump Station Overhaul,15/05/2025,16/05/2025,18,T-003,Delayed
-T-007,Electrical Panel Upgrade,14/05/2025,15/05/2025,10,T-001,In Progress
-T-008,Crusher Jaw Plate Swap,16/05/2025,17/05/2025,14,T-005,Yet To Start
-T-009,Tailings Line Flush & Test,17/05/2025,18/05/2025,6,"T-004,T-006",Yet To Start
-T-010,Gearbox Oil Change Unit 3,12/05/2025,13/05/2025,4,None,Complete
-T-011,Fire Suppression Test,18/05/2025,18/05/2025,3,"T-007,T-009",Yet To Start
-T-012,Final Commissioning & Handover,19/05/2025,19/05/2025,8,"T-008,T-009,T-011",Yet To Start
+Order Number,Operation Number,Name,Start,Finish,Duration,Crew,Complete
+WO-4421,,Main Drive Bearing Replacement,12/05/2025 06:00,16/05/2025 14:00,56h,Linkforce T1,62
+WO-4421,10,Remove Bearing Housing,12/05/2025 06:00,13/05/2025 06:00,16h,Linkforce T1,100
+WO-4421,20,Extract Bearing,13/05/2025 06:00,14/05/2025 06:00,16h,Linkforce T1,80
+WO-4421,30,Install New Bearing,14/05/2025 06:00,15/05/2025 06:00,16h,Linkforce T1,20
+WO-4421,40,Torque & Commission,15/05/2025 06:00,16/05/2025 14:00,8h,Linkforce T2,0
+WO-4422,,Vessel Internal Inspection,13/05/2025 06:00,14/05/2025 14:00,32h,Linkforce T2,100
+WO-4422,10,Internal Clean,13/05/2025 06:00,13/05/2025 18:00,12h,Linkforce T2,100
+WO-4422,20,Inspection & Report,13/05/2025 18:00,14/05/2025 14:00,8h,Linkforce T2,100
+WO-4423,,SAG Mill Liner Change,13/05/2025 06:00,17/05/2025 06:00,48h,Linkforce T2,28
+WO-4423,10,Remove Old Liners,13/05/2025 06:00,14/05/2025 06:00,16h,Linkforce T2,100
+WO-4423,20,Clean Mill Interior,14/05/2025 06:00,14/05/2025 18:00,8h,Linkforce T2,60
+WO-4423,30,Install New Liners,14/05/2025 18:00,16/05/2025 06:00,24h,Linkforce T3,0
+WO-4423,40,Torque Check & Sign Off,16/05/2025 06:00,17/05/2025 06:00,8h,Linkforce T3,0
+WO-4424,,Pump Station Overhaul,15/05/2025 06:00,16/05/2025 00:00,18h,Linkforce T3,10
+WO-4424,10,Drain & Isolate Pump,15/05/2025 06:00,15/05/2025 12:00,6h,Linkforce T3,100
+WO-4424,20,Disassemble & Inspect,15/05/2025 12:00,15/05/2025 18:00,6h,Linkforce T3,0
+WO-4424,30,Replace Seals & Bearings,15/05/2025 18:00,16/05/2025 00:00,6h,Linkforce T3,0
+WO-4425,,Electrical Panel Upgrade,14/05/2025 06:00,15/05/2025 16:00,10h,SRG Electrical T1,75
+WO-4425,10,Isolate & De-energise,14/05/2025 06:00,14/05/2025 10:00,4h,SRG Electrical T1,100
+WO-4425,20,Remove Old Panel,14/05/2025 10:00,14/05/2025 14:00,4h,SRG Electrical T1,100
+WO-4425,30,Install New Panel,14/05/2025 14:00,15/05/2025 06:00,8h,SRG Electrical T1,80
+WO-4425,40,Test & Commission,15/05/2025 06:00,15/05/2025 16:00,10h,SRG Electrical T2,0
+WO-4426,,MCC Panel Terminations,13/05/2025 06:00,14/05/2025 18:00,24h,SRG Electrical T1,80
+WO-4426,10,Cable Identification,13/05/2025 06:00,13/05/2025 12:00,6h,SRG Electrical T1,100
+WO-4426,20,Terminate Cables,13/05/2025 12:00,14/05/2025 06:00,12h,SRG Electrical T1,100
+WO-4426,30,Test & Verify,14/05/2025 06:00,14/05/2025 18:00,6h,SRG Electrical T2,40
+WO-4427,,Heavy Lift Rigging Setup,13/05/2025 06:00,14/05/2025 06:00,16h,Bundara Ropes T1,100
+WO-4427,10,Rig Inspection,13/05/2025 06:00,13/05/2025 10:00,4h,Bundara Ropes T1,100
+WO-4427,20,Setup Crane & Slings,13/05/2025 10:00,13/05/2025 18:00,8h,Bundara Ropes T1,100
+WO-4427,30,Test Lift & Verify,13/05/2025 18:00,14/05/2025 06:00,4h,Bundara Ropes T1,100
+WO-4428,,Crane Lift Gearbox Removal,14/05/2025 06:00,14/05/2025 18:00,10h,Bundara Ropes T1,70
+WO-4428,10,Pre-Lift Safety Check,14/05/2025 06:00,14/05/2025 08:00,2h,Bundara Ropes T1,100
+WO-4428,20,Lift & Remove Gearbox,14/05/2025 08:00,14/05/2025 14:00,6h,Bundara Ropes T1,100
+WO-4428,30,Set Down & Secure,14/05/2025 14:00,14/05/2025 18:00,2h,Bundara Ropes T1,0
+WO-4429,,Scaffold Erection,12/05/2025 06:00,14/05/2025 06:00,32h,DGE T1,100
+WO-4429,10,Scaffold Level 1,12/05/2025 06:00,13/05/2025 06:00,16h,DGE T1,100
+WO-4429,20,Scaffold Level 2,13/05/2025 06:00,14/05/2025 06:00,16h,DGE T1,100
+WO-4430,,Scaffold Modification,15/05/2025 06:00,15/05/2025 18:00,8h,DGE T2,30
+WO-4430,10,Assess & Plan Modification,15/05/2025 06:00,15/05/2025 10:00,4h,DGE T2,100
+WO-4430,20,Modify East Side,15/05/2025 10:00,15/05/2025 18:00,8h,DGE T2,0
+WO-4431,,Structural Repair North Bay,13/05/2025 06:00,15/05/2025 06:00,32h,Warrikal T1,65
+WO-4431,10,Assess Damage,13/05/2025 06:00,13/05/2025 12:00,6h,Warrikal T1,100
+WO-4431,20,Prepare & Cut Steel,13/05/2025 12:00,14/05/2025 06:00,12h,Warrikal T1,100
+WO-4431,30,Weld & Fabricate,14/05/2025 06:00,14/05/2025 18:00,12h,Warrikal T1,80
+WO-4431,40,Grind & Paint,14/05/2025 18:00,15/05/2025 06:00,8h,Warrikal T2,0
+WO-4432,,Handrail Replacement,14/05/2025 06:00,15/05/2025 06:00,16h,Warrikal T2,40
+WO-4432,10,Remove Old Handrails,14/05/2025 06:00,14/05/2025 12:00,6h,Warrikal T2,100
+WO-4432,20,Fabricate New Handrails,14/05/2025 12:00,14/05/2025 18:00,6h,Warrikal T2,60
+WO-4432,30,Install & Test,14/05/2025 18:00,15/05/2025 06:00,8h,Warrikal T2,0
