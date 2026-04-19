@@ -1,4 +1,5 @@
 'use client';
+import { supabase } from '../lib/supabase';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -151,7 +152,7 @@ export default function Home() {
   localStorage.setItem('revision', revision);
   if (file) {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const text = e.target?.result as string;
       const lines = text.split('\n').filter(l => l.trim());
       const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
@@ -246,7 +247,30 @@ export default function Home() {
       });
 
       localStorage.setItem('tasks', JSON.stringify(tasks));
-      router.push('/overview');
+
+// Save to Supabase
+const { data: shutdown } = await supabase
+  .from('shutdowns')
+  .insert({ client, revision })
+  .select()
+  .single();
+
+if (shutdown) {
+  const shutdownId = shutdown.id;
+  localStorage.setItem('shutdownId', shutdownId);
+
+  const supabaseTasks = tasks.map(t => ({
+    ...t,
+    shutdown_id: shutdownId,
+    client,
+    revision,
+    ops: t.ops || [],
+  }));
+
+  await supabase.from('tasks').insert(supabaseTasks);
+}
+
+router.push('/overview');
     };
     reader.readAsText(file);
   }
