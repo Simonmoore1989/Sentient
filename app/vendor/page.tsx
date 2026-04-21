@@ -113,7 +113,7 @@ function VendorField() {
             </div>
             <div>
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1 }}>Sentient</div>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 7, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#2ECC9A' }}>Field View</div>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#2ECC9A' }}>Field Supervision</div>
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
