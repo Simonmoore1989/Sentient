@@ -267,7 +267,8 @@ if (shutdown) {
     ops: t.ops || [],
   }));
 
-  await supabase.from('tasks').insert(supabaseTasks);
+  const { error: taskError } = await supabase.from('tasks').insert(supabaseTasks);
+if (taskError) console.error('Task insert error:', taskError);
 }
 
 router.push('/overview');
