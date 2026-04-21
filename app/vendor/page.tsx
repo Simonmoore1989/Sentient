@@ -94,8 +94,6 @@ function VendorField() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #080C0F; }
         @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-        input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: #1E2A35; outline: none; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #2ECC9A; cursor: pointer; box-shadow: 0 0 8px rgba(46,204,154,0.4); }
         textarea::placeholder { color: #2E4050; font-family: 'DM Mono', monospace; font-size: 11px; }
         textarea { resize: none; }
       `}</style>
@@ -145,7 +143,7 @@ function VendorField() {
               return (
                 <div key={task.id} style={{ background: '#0E1419', border: `1px solid ${isSubmitted ? '#2ECC9A' : '#1E2A35'}`, borderRadius: 12, overflow: 'hidden', animation: 'fadeIn 0.3s ease', transition: 'border-color 0.3s' }}>
 
-                  {/* WO Header — tap to expand */}
+                  {/* WO Header */}
                   <div onClick={() => toggleExpand(woKey)} style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 12 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -161,7 +159,7 @@ function VendorField() {
                       <div style={{ textAlign: 'right' }}>
                         <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: progressColor }}>{progress}%</div>
                         <div style={{ fontSize: 8, color: '#2E4050' }}>{task.start}</div>
-<div style={{ fontSize: 8, color: '#2E4050' }}>→ {task.end}</div>
+                        <div style={{ fontSize: 8, color: '#2E4050' }}>→ {task.end}</div>
                       </div>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2E4050" strokeWidth="2" style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
                         <polyline points="6 9 12 15 18 9"/>
@@ -184,7 +182,7 @@ function VendorField() {
 
                             return (
                               <div key={opKey} style={{ padding: '12px 16px', borderBottom: oi < task.ops.length - 1 ? '1px solid #141B22' : 'none' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                                       <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#2E4050', background: '#141B22', border: '1px solid #1E2A35', borderRadius: 4, padding: '2px 6px', whiteSpace: 'nowrap' }}>OP {op.op}</span>
@@ -197,11 +195,9 @@ function VendorField() {
                                   <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, color: opColor, marginLeft: 12 }}>{opProgress}%</span>
                                 </div>
 
-                                
-
                                 <button
-                                  onClick={() => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], progress: 100 } }))}
-                                  style={{ padding: '5px 12px', background: opProgress === 100 ? 'rgba(46,204,154,0.15)' : 'transparent', border: `1px solid ${opProgress === 100 ? '#2ECC9A' : '#1E2A35'}`, borderRadius: 6, color: opProgress === 100 ? '#2ECC9A' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                                  onClick={() => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], progress: opProgress === 100 ? 0 : 100 } }))}
+                                  style={{ padding: '6px 14px', background: opProgress === 100 ? 'rgba(46,204,154,0.15)' : 'transparent', border: `1px solid ${opProgress === 100 ? '#2ECC9A' : '#1E2A35'}`, borderRadius: 6, color: opProgress === 100 ? '#2ECC9A' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
                                   {opProgress === 100 ? '✓ Complete' : 'Mark Complete'}
                                 </button>
                               </div>
@@ -209,18 +205,6 @@ function VendorField() {
                           })}
                         </div>
                       )}
-
-                      
-                        <input
-                          type="range" min={0} max={100} step={5} value={progress}
-                          onChange={e => setUpdates(prev => ({ ...prev, [woKey]: { ...prev[woKey], progress: Number(e.target.value) } }))}
-                          style={{ accentColor: progressColor }}
-                        />
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
-                          <span style={{ fontSize: 8, color: '#2E4050' }}>0%</span>
-                          <span style={{ fontSize: 8, color: '#2E4050' }}>100%</span>
-                        </div>
-                      </div>
 
                       {/* Note */}
                       <div style={{ padding: '12px 16px', borderBottom: '1px solid #1E2A35' }}>
