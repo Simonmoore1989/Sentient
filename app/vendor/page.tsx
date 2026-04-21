@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 
@@ -10,9 +10,10 @@ function VendorField() {
 
   const [tasks, setTasks] = useState<any[]>([]);
   const [expanded, setExpanded] = useState<string[]>([]);
-  const [updates, setUpdates] = useState<Record<string, { progress: number; note: string }>>({});
+  const [updates, setUpdates] = useState<Record<string, { progress: number; note: string; status: string; showSlider: boolean }>>({});
   const [submitted, setSubmitted] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
+  const holdTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   useEffect(() => {
     async function loadTasks() {
@@ -47,10 +48,10 @@ function VendorField() {
 
       const initialUpdates: Record<string, any> = {};
       filtered.forEach((t: any) => {
-        initialUpdates[t.id] = { progress: t.progress || 0, note: '' };
+        initialUpdates[t.id] = { progress: t.progress || 0, note: '', status: t.status || 'PENDING', showSlider: false };
         if (t.ops) {
           t.ops.forEach((op: any, i: number) => {
-            initialUpdates[`${t.id}-op-${i}`] = { progress: op.progress || 0, note: '' };
+            initialUpdates[`${t.id}-op-${i}`] = { progress: op.progress || 0, note: '', status: op.status || 'PENDING', showSlider: false };
           });
         }
       });
@@ -60,6 +61,42 @@ function VendorField() {
 
     loadTasks();
   }, []);
+
+  function calculateOnTrackProgress(start: string, end: string): number {
+    try {
+      const parseDate = (str: string) => {
+        const parts = str.split(/[/ :]/).map(Number);
+        return new Date(parts[2], parts[1] - 1, parts[0], parts[3] || 0, parts[4] || 0);
+      };
+      const startDate = parseDate(start);
+      const endDate = parseDate(end);
+      const now = new Date();
+      const total = endDate.getTime() - startDate.getTime();
+      const elapsed = now.getTime() - startDate.getTime();
+      const pct = Math.round((elapsed / total) * 100);
+      return Math.min(100, Math.max(0, pct));
+    } catch {
+      return 0;
+    }
+  }
+
+  function handleOnTrackPress(key: string, start: string, end: string) {
+    holdTimers.current[key] = setTimeout(() => {
+      setUpdates(prev => ({ ...prev, [key]: { ...prev[key], showSlider: true, status: 'IN PROGRESS' } }));
+    }, 500);
+  }
+
+  function handleOnTrackRelease(key: string, start: string, end: string) {
+    if (holdTimers.current[key]) {
+      clearTimeout(holdTimers.current[key]);
+      delete holdTimers.current[key];
+    }
+    setUpdates(prev => {
+      if (prev[key]?.showSlider) return prev;
+      const pct = calculateOnTrackProgress(start, end);
+      return { ...prev, [key]: { ...prev[key], progress: pct, status: 'IN PROGRESS', showSlider: false } };
+    });
+  }
 
   function toggleExpand(id: string) {
     setExpanded(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -71,7 +108,7 @@ function VendorField() {
     if (!task) return;
 
     const newProgress = update.progress;
-    const newStatus = newProgress === 100 ? 'COMPLETE' : newProgress > 0 ? 'IN PROGRESS' : 'PENDING';
+    const newStatus = update.status === 'DELAYED' ? 'DELAYED' : newProgress === 100 ? 'COMPLETE' : newProgress > 0 ? 'IN PROGRESS' : 'PENDING';
 
     await supabase
       .from('tasks')
@@ -96,6 +133,8 @@ function VendorField() {
         @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
         textarea::placeholder { color: #2E4050; font-family: 'DM Mono', monospace; font-size: 11px; }
         textarea { resize: none; }
+        input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: #1E2A35; outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #2ECC9A; cursor: pointer; box-shadow: 0 0 8px rgba(46,204,154,0.4); }
       `}</style>
 
       <div style={{ minHeight: '100vh', background: '#080C0F', fontFamily: "'DM Mono', monospace", color: '#E8EDF2', paddingBottom: 40 }}>
@@ -133,11 +172,11 @@ function VendorField() {
           ) : (
             tasks.map((task: any) => {
               const woKey = task.id;
-              const woUpdate = updates[woKey] || { progress: task.progress || 0, note: '' };
+              const woUpdate = updates[woKey] || { progress: task.progress || 0, note: '', status: task.status || 'PENDING', showSlider: false };
               const isExpanded = expanded.includes(woKey);
               const isSubmitted = submitted[woKey];
               const progress = woUpdate.progress;
-              const progressColor = progress === 100 ? '#2ECC9A' : progress > 0 ? '#4A9EE0' : '#5A7080';
+              const progressColor = woUpdate.status === 'DELAYED' ? '#E05A5A' : progress === 100 ? '#2ECC9A' : progress > 0 ? '#4A9EE0' : '#5A7080';
               const hasOps = task.ops && task.ops.length > 0;
 
               return (
@@ -176,13 +215,13 @@ function VendorField() {
                         <div style={{ borderBottom: '1px solid #1E2A35' }}>
                           {task.ops.map((op: any, oi: number) => {
                             const opKey = `${task.id}-op-${oi}`;
-                            const opUpdate = updates[opKey] || { progress: op.progress || 0, note: '' };
+                            const opUpdate = updates[opKey] || { progress: op.progress || 0, note: '', status: 'PENDING', showSlider: false };
                             const opProgress = opUpdate.progress;
-                            const opColor = opProgress === 100 ? '#2ECC9A' : opProgress > 0 ? '#4A9EE0' : '#5A7080';
+                            const opColor = opUpdate.status === 'DELAYED' ? '#E05A5A' : opProgress === 100 ? '#2ECC9A' : opProgress > 0 ? '#4A9EE0' : '#5A7080';
 
                             return (
                               <div key={opKey} style={{ padding: '12px 16px', borderBottom: oi < task.ops.length - 1 ? '1px solid #141B22' : 'none' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                                       <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#2E4050', background: '#141B22', border: '1px solid #1E2A35', borderRadius: 4, padding: '2px 6px', whiteSpace: 'nowrap' }}>OP {op.op}</span>
@@ -195,23 +234,44 @@ function VendorField() {
                                   <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, color: opColor, marginLeft: 12 }}>{opProgress}%</span>
                                 </div>
 
+                                {/* Manual slider — shows on hold */}
+                                {opUpdate.showSlider && (
+                                  <div style={{ marginBottom: 12, padding: '10px 0' }}>
+                                    <input
+                                      type="range" min={0} max={100} step={5} value={opProgress}
+                                      onChange={e => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], progress: Number(e.target.value) } }))}
+                                      style={{ accentColor: '#2ECC9A' }}
+                                    />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                                      <span style={{ fontSize: 8, color: '#2E4050' }}>0%</span>
+                                      <span style={{ fontSize: 8, color: '#2ECC9A', fontWeight: 700 }}>{opProgress}%</span>
+                                      <span style={{ fontSize: 8, color: '#2E4050' }}>100%</span>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Status buttons */}
                                 <div style={{ display: 'flex', gap: 6 }}>
-  <button
-    onClick={() => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], status: 'ON TRACK' } }))}
-    style={{ flex: 1, padding: '7px 6px', background: (updates[opKey] as any)?.status === 'ON TRACK' ? 'rgba(74,158,224,0.15)' : 'transparent', border: `1px solid ${(updates[opKey] as any)?.status === 'ON TRACK' ? '#4A9EE0' : '#1E2A35'}`, borderRadius: 6, color: (updates[opKey] as any)?.status === 'ON TRACK' ? '#4A9EE0' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>
-    On Track
-  </button>
-  <button
-    onClick={() => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], status: 'DELAYED' } }))}
-    style={{ flex: 1, padding: '7px 6px', background: (updates[opKey] as any)?.status === 'DELAYED' ? 'rgba(224,90,90,0.15)' : 'transparent', border: `1px solid ${(updates[opKey] as any)?.status === 'DELAYED' ? '#E05A5A' : '#1E2A35'}`, borderRadius: 6, color: (updates[opKey] as any)?.status === 'DELAYED' ? '#E05A5A' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>
-    Delay
-  </button>
-  <button
-    onClick={() => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], progress: opProgress === 100 ? 0 : 100, status: 'COMPLETE' } }))}
-    style={{ flex: 1, padding: '7px 6px', background: opProgress === 100 ? 'rgba(46,204,154,0.15)' : 'transparent', border: `1px solid ${opProgress === 100 ? '#2ECC9A' : '#1E2A35'}`, borderRadius: 6, color: opProgress === 100 ? '#2ECC9A' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>
-    Complete
-  </button>
-</div>
+                                  <button
+                                    onTouchStart={() => handleOnTrackPress(opKey, op.start, op.end)}
+                                    onTouchEnd={() => handleOnTrackRelease(opKey, op.start, op.end)}
+                                    onMouseDown={() => handleOnTrackPress(opKey, op.start, op.end)}
+                                    onMouseUp={() => handleOnTrackRelease(opKey, op.start, op.end)}
+                                    style={{ flex: 1, padding: '8px 4px', background: opUpdate.status === 'IN PROGRESS' ? 'rgba(74,158,224,0.15)' : 'transparent', border: `1px solid ${opUpdate.status === 'IN PROGRESS' ? '#4A9EE0' : '#1E2A35'}`, borderRadius: 6, color: opUpdate.status === 'IN PROGRESS' ? '#4A9EE0' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                                    On Track
+                                  </button>
+                                  <button
+                                    onClick={() => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], status: 'DELAYED', showSlider: false } }))}
+                                    style={{ flex: 1, padding: '8px 4px', background: opUpdate.status === 'DELAYED' ? 'rgba(224,90,90,0.15)' : 'transparent', border: `1px solid ${opUpdate.status === 'DELAYED' ? '#E05A5A' : '#1E2A35'}`, borderRadius: 6, color: opUpdate.status === 'DELAYED' ? '#E05A5A' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                                    Delay
+                                  </button>
+                                  <button
+                                    onClick={() => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], progress: opProgress === 100 ? 0 : 100, status: opProgress === 100 ? 'PENDING' : 'COMPLETE', showSlider: false } }))}
+                                    style={{ flex: 1, padding: '8px 4px', background: opUpdate.status === 'COMPLETE' || opProgress === 100 ? 'rgba(46,204,154,0.15)' : 'transparent', border: `1px solid ${opUpdate.status === 'COMPLETE' || opProgress === 100 ? '#2ECC9A' : '#1E2A35'}`, borderRadius: 6, color: opUpdate.status === 'COMPLETE' || opProgress === 100 ? '#2ECC9A' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                                    Complete
+                                  </button>
+                                </div>
+
                               </div>
                             );
                           })}
