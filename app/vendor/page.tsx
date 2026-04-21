@@ -14,6 +14,7 @@ function VendorField() {
   const [submitted, setSubmitted] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
+  const [delayPanel, setDelayPanel] = useState<Record<string, { reason: string; hours: number }>>({});
   const holdTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   useEffect(() => {
@@ -161,24 +162,24 @@ function VendorField() {
         </div>
 
         {/* Filter bar */}
-<div style={{ padding: '12px 16px', display: 'flex', gap: 8, borderBottom: '1px solid #1E2A35', background: '#0E1419' }}>
-  {[
-    { label: 'All', value: 'ALL' },
-    { label: 'In Progress', value: 'IN PROGRESS' },
-    { label: 'Not Started', value: 'PENDING' },
-    { label: 'Complete', value: 'COMPLETE' },
-  ].map(f => (
-    <button
-      key={f.value}
-      onClick={() => setFilter(f.value)}
-      style={{ flex: 1, padding: '7px 4px', border: `1px solid ${filter === f.value ? '#2ECC9A' : '#1E2A35'}`, borderRadius: 6, background: filter === f.value ? 'rgba(46,204,154,0.1)' : 'transparent', color: filter === f.value ? '#2ECC9A' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
-      {f.label}
-    </button>
-  ))}
-</div>
+        <div style={{ padding: '12px 16px', display: 'flex', gap: 8, borderBottom: '1px solid #1E2A35', background: '#0E1419' }}>
+          {[
+            { label: 'All', value: 'ALL' },
+            { label: 'In Progress', value: 'IN PROGRESS' },
+            { label: 'Not Started', value: 'PENDING' },
+            { label: 'Complete', value: 'COMPLETE' },
+          ].map(f => (
+            <button
+              key={f.value}
+              onClick={() => setFilter(f.value)}
+              style={{ flex: 1, padding: '7px 4px', border: `1px solid ${filter === f.value ? '#2ECC9A' : '#1E2A35'}`, borderRadius: 6, background: filter === f.value ? 'rgba(46,204,154,0.1)' : 'transparent', color: filter === f.value ? '#2ECC9A' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
+              {f.label}
+            </button>
+          ))}
+        </div>
 
-{/* Content */}
-<div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* Content */}
+        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
           {loading ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: '#2E4050', fontSize: 11 }}>Loading tasks...</div>
@@ -188,140 +189,193 @@ function VendorField() {
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 700, color: '#2E4050', letterSpacing: '0.1em', textAlign: 'center' }}>No tasks assigned to your team</div>
             </div>
           ) : (
-            tasks.filter((task: any) => filter === 'ALL' || task.status === filter).map((task: any) => {
-              const woKey = task.id;
-              const woUpdate = updates[woKey] || { progress: task.progress || 0, note: '', status: task.status || 'PENDING', showSlider: false };
-              const isExpanded = expanded.includes(woKey);
-              const isSubmitted = submitted[woKey];
-              const progress = woUpdate.progress;
-              const progressColor = woUpdate.status === 'DELAYED' ? '#E05A5A' : progress === 100 ? '#2ECC9A' : progress > 0 ? '#4A9EE0' : '#5A7080';
-              const hasOps = task.ops && task.ops.length > 0;
+            tasks
+              .filter((task: any) => filter === 'ALL' || task.status === filter)
+              .map((task: any) => {
+                const woKey = task.id;
+                const woUpdate = updates[woKey] || { progress: task.progress || 0, note: '', status: task.status || 'PENDING', showSlider: false };
+                const isExpanded = expanded.includes(woKey);
+                const isSubmitted = submitted[woKey];
+                const progress = woUpdate.progress;
+                const progressColor = woUpdate.status === 'DELAYED' ? '#E05A5A' : progress === 100 ? '#2ECC9A' : progress > 0 ? '#4A9EE0' : '#5A7080';
+                const hasOps = task.ops && task.ops.length > 0;
 
-              return (
-                <div key={task.id} style={{ background: '#0E1419', border: `1px solid ${isSubmitted ? '#2ECC9A' : '#1E2A35'}`, borderRadius: 12, overflow: 'hidden', animation: 'fadeIn 0.3s ease', transition: 'border-color 0.3s' }}>
+                return (
+                  <div key={task.id} style={{ background: '#0E1419', border: `1px solid ${isSubmitted ? '#2ECC9A' : '#1E2A35'}`, borderRadius: 12, overflow: 'hidden', animation: 'fadeIn 0.3s ease', transition: 'border-color 0.3s' }}>
 
-                  {/* WO Header */}
-                  <div onClick={() => toggleExpand(woKey)} style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 12 }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#2ECC9A', background: 'rgba(46,204,154,0.1)', border: '1px solid rgba(46,204,154,0.2)', borderRadius: 4, padding: '2px 6px', whiteSpace: 'nowrap' }}>{task.wo}</span>
-                        <span style={{ fontSize: 9, color: '#2E4050', whiteSpace: 'nowrap' }}>{task.team}</span>
-                      </div>
-                      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800, color: '#E8EDF2', lineHeight: 1.3 }}>{task.name}</div>
-                      {hasOps && (
-                        <div style={{ fontSize: 9, color: '#2E4050', marginTop: 4 }}>{task.ops.length} operation{task.ops.length > 1 ? 's' : ''}</div>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: progressColor }}>{progress}%</div>
-                        <div style={{ fontSize: 8, color: '#2E4050' }}>{task.start}</div>
-                        <div style={{ fontSize: 8, color: '#2E4050' }}>→ {task.end}</div>
-                      </div>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2E4050" strokeWidth="2" style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-                        <polyline points="6 9 12 15 18 9"/>
-                      </svg>
-                    </div>
-                  </div>
-
-                  {/* Expanded content */}
-                  {isExpanded && (
-                    <div style={{ borderTop: '1px solid #1E2A35' }}>
-
-                      {/* Op Lines */}
-                      {hasOps && (
-                        <div style={{ borderBottom: '1px solid #1E2A35' }}>
-                          {task.ops.map((op: any, oi: number) => {
-                            const opKey = `${task.id}-op-${oi}`;
-                            const opUpdate = updates[opKey] || { progress: op.progress || 0, note: '', status: 'PENDING', showSlider: false };
-                            const opProgress = opUpdate.progress;
-                            const opColor = opUpdate.status === 'DELAYED' ? '#E05A5A' : opProgress === 100 ? '#2ECC9A' : opProgress > 0 ? '#4A9EE0' : '#5A7080';
-
-                            return (
-                              <div key={opKey} style={{ padding: '12px 16px', borderBottom: oi < task.ops.length - 1 ? '1px solid #141B22' : 'none' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                                      <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#2E4050', background: '#141B22', border: '1px solid #1E2A35', borderRadius: 4, padding: '2px 6px', whiteSpace: 'nowrap' }}>OP {op.op}</span>
-                                      {op.crew && op.crew !== task.team && (
-                                        <span style={{ fontSize: 9, color: '#2E4050' }}>{op.crew}</span>
-                                      )}
-                                    </div>
-                                    <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 600, color: '#5A7080' }}>{op.name}</div>
-                                  </div>
-                                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, color: opColor, marginLeft: 12 }}>{opProgress}%</span>
-                                </div>
-
-                                {/* Manual slider — shows on hold */}
-                                {opUpdate.showSlider && (
-                                  <div style={{ marginBottom: 12, padding: '10px 0' }}>
-                                    <input
-                                      type="range" min={0} max={100} step={5} value={opProgress}
-                                      onChange={e => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], progress: Number(e.target.value) } }))}
-                                      style={{ accentColor: '#2ECC9A' }}
-                                    />
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-                                      <span style={{ fontSize: 8, color: '#2E4050' }}>0%</span>
-                                      <span style={{ fontSize: 8, color: '#2ECC9A', fontWeight: 700 }}>{opProgress}%</span>
-                                      <span style={{ fontSize: 8, color: '#2E4050' }}>100%</span>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Status buttons */}
-                                <div style={{ display: 'flex', gap: 6 }}>
-                                  <button
-                                    onTouchStart={() => handleOnTrackPress(opKey, op.start, op.end)}
-                                    onTouchEnd={() => handleOnTrackRelease(opKey, op.start, op.end)}
-                                    onMouseDown={() => handleOnTrackPress(opKey, op.start, op.end)}
-                                    onMouseUp={() => handleOnTrackRelease(opKey, op.start, op.end)}
-                                    style={{ flex: 1, padding: '8px 4px', background: opUpdate.status === 'IN PROGRESS' ? 'rgba(74,158,224,0.15)' : 'transparent', border: `1px solid ${opUpdate.status === 'IN PROGRESS' ? '#4A9EE0' : '#1E2A35'}`, borderRadius: 6, color: opUpdate.status === 'IN PROGRESS' ? '#4A9EE0' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
-                                    On Track
-                                  </button>
-                                  <button
-                                    onClick={() => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], status: 'DELAYED', showSlider: false } }))}
-                                    style={{ flex: 1, padding: '8px 4px', background: opUpdate.status === 'DELAYED' ? 'rgba(224,90,90,0.15)' : 'transparent', border: `1px solid ${opUpdate.status === 'DELAYED' ? '#E05A5A' : '#1E2A35'}`, borderRadius: 6, color: opUpdate.status === 'DELAYED' ? '#E05A5A' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
-                                    Delay
-                                  </button>
-                                  <button
-                                    onClick={() => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], progress: opProgress === 100 ? 0 : 100, status: opProgress === 100 ? 'PENDING' : 'COMPLETE', showSlider: false } }))}
-                                    style={{ flex: 1, padding: '8px 4px', background: opUpdate.status === 'COMPLETE' || opProgress === 100 ? 'rgba(46,204,154,0.15)' : 'transparent', border: `1px solid ${opUpdate.status === 'COMPLETE' || opProgress === 100 ? '#2ECC9A' : '#1E2A35'}`, borderRadius: 6, color: opUpdate.status === 'COMPLETE' || opProgress === 100 ? '#2ECC9A' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
-                                    Complete
-                                  </button>
-                                </div>
-
-                              </div>
-                            );
-                          })}
+                    {/* WO Header */}
+                    <div onClick={() => toggleExpand(woKey)} style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 12 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#2ECC9A', background: 'rgba(46,204,154,0.1)', border: '1px solid rgba(46,204,154,0.2)', borderRadius: 4, padding: '2px 6px', whiteSpace: 'nowrap' }}>{task.wo}</span>
+                          <span style={{ fontSize: 9, color: '#2E4050', whiteSpace: 'nowrap' }}>{task.team}</span>
                         </div>
-                      )}
-
-                      {/* Note */}
-                      <div style={{ padding: '12px 16px', borderBottom: '1px solid #1E2A35' }}>
-                        <textarea
-                          rows={2}
-                          placeholder="Add a note — delays, issues, anything relevant..."
-                          value={woUpdate.note}
-                          onChange={e => setUpdates(prev => ({ ...prev, [woKey]: { ...prev[woKey], note: e.target.value } }))}
-                          style={{ width: '100%', background: '#141B22', border: '1px solid #1E2A35', borderRadius: 8, padding: '10px 12px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#E8EDF2', outline: 'none', lineHeight: 1.5 }}
-                        />
+                        <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800, color: '#E8EDF2', lineHeight: 1.3 }}>{task.name}</div>
+                        {hasOps && (
+                          <div style={{ fontSize: 9, color: '#2E4050', marginTop: 4 }}>{task.ops.length} operation{task.ops.length > 1 ? 's' : ''}</div>
+                        )}
                       </div>
-
-                      {/* Submit */}
-                      <div style={{ padding: '12px 16px' }}>
-                        <button
-                          onClick={() => submitWO(woKey)}
-                          style={{ width: '100%', padding: '14px', background: isSubmitted ? 'rgba(46,204,154,0.15)' : '#2ECC9A', border: isSubmitted ? '1px solid #2ECC9A' : 'none', borderRadius: 10, color: isSubmitted ? '#2ECC9A' : '#040D0A', fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.3s' }}>
-                          {isSubmitted ? '✓ Update Submitted' : 'Submit Update'}
-                        </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: progressColor }}>{progress}%</div>
+                          <div style={{ fontSize: 8, color: '#2E4050' }}>{task.start}</div>
+                          <div style={{ fontSize: 8, color: '#2E4050' }}>→ {task.end}</div>
+                        </div>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2E4050" strokeWidth="2" style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                          <polyline points="6 9 12 15 18 9"/>
+                        </svg>
                       </div>
-
                     </div>
-                  )}
 
-                </div>
-              );
-            })
+                    {/* Expanded content */}
+                    {isExpanded && (
+                      <div style={{ borderTop: '1px solid #1E2A35' }}>
+
+                        {/* Op Lines */}
+                        {hasOps && (
+                          <div style={{ borderBottom: '1px solid #1E2A35' }}>
+                            {task.ops.map((op: any, oi: number) => {
+                              const opKey = `${task.id}-op-${oi}`;
+                              const opUpdate = updates[opKey] || { progress: op.progress || 0, note: '', status: 'PENDING', showSlider: false };
+                              const opProgress = opUpdate.progress;
+                              const opColor = opUpdate.status === 'DELAYED' ? '#E05A5A' : opProgress === 100 ? '#2ECC9A' : opProgress > 0 ? '#4A9EE0' : '#5A7080';
+
+                              return (
+                                <div key={opKey} style={{ padding: '12px 16px', borderBottom: oi < task.ops.length - 1 ? '1px solid #141B22' : 'none' }}>
+
+                                  {/* Op header */}
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#2E4050', background: '#141B22', border: '1px solid #1E2A35', borderRadius: 4, padding: '2px 6px', whiteSpace: 'nowrap' }}>OP {op.op}</span>
+                                        {op.crew && op.crew !== task.team && (
+                                          <span style={{ fontSize: 9, color: '#2E4050' }}>{op.crew}</span>
+                                        )}
+                                      </div>
+                                      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 600, color: '#5A7080' }}>{op.name}</div>
+                                    </div>
+                                    <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, color: opColor, marginLeft: 12 }}>{opProgress}%</span>
+                                  </div>
+
+                                  {/* Manual slider */}
+                                  {opUpdate.showSlider && (
+                                    <div style={{ marginBottom: 12, padding: '10px 12px', background: '#141B22', borderRadius: 8, border: '1px solid #1E2A35' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                                        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#5A7080' }}>Set Progress</span>
+                                        <button
+                                          onClick={() => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], showSlider: false } }))}
+                                          style={{ background: 'transparent', border: 'none', color: '#2ECC9A', cursor: 'pointer', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, textTransform: 'uppercase' }}>
+                                          Done ✓
+                                        </button>
+                                      </div>
+                                      <input
+                                        type="range" min={0} max={100} step={5} value={opProgress}
+                                        onChange={e => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], progress: Number(e.target.value), status: 'IN PROGRESS' } }))}
+                                        style={{ accentColor: '#2ECC9A' }}
+                                      />
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                                        <span style={{ fontSize: 8, color: '#2E4050' }}>0%</span>
+                                        <span style={{ fontSize: 8, color: '#2ECC9A', fontWeight: 700 }}>{opProgress}%</span>
+                                        <span style={{ fontSize: 8, color: '#2E4050' }}>100%</span>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Status buttons */}
+                                  <div style={{ display: 'flex', gap: 6 }}>
+                                    <button
+                                      onTouchStart={() => handleOnTrackPress(opKey, op.start, op.end)}
+                                      onTouchEnd={() => handleOnTrackRelease(opKey, op.start, op.end)}
+                                      onMouseDown={() => handleOnTrackPress(opKey, op.start, op.end)}
+                                      onMouseUp={() => handleOnTrackRelease(opKey, op.start, op.end)}
+                                      style={{ flex: 1, padding: '8px 4px', background: opUpdate.status === 'IN PROGRESS' ? 'rgba(74,158,224,0.15)' : 'transparent', border: `1px solid ${opUpdate.status === 'IN PROGRESS' ? '#4A9EE0' : '#1E2A35'}`, borderRadius: 6, color: opUpdate.status === 'IN PROGRESS' ? '#4A9EE0' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                                      On Track
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], status: 'DELAYED', showSlider: false } }));
+                                        setDelayPanel(prev => ({ ...prev, [opKey]: prev[opKey] || { reason: '', hours: 1 } }));
+                                      }}
+                                      style={{ flex: 1, padding: '8px 4px', background: opUpdate.status === 'DELAYED' ? 'rgba(224,90,90,0.15)' : 'transparent', border: `1px solid ${opUpdate.status === 'DELAYED' ? '#E05A5A' : '#1E2A35'}`, borderRadius: 6, color: opUpdate.status === 'DELAYED' ? '#E05A5A' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                                      Delay
+                                    </button>
+                                    <button
+                                      onClick={() => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], progress: opProgress === 100 ? 0 : 100, status: opProgress === 100 ? 'PENDING' : 'COMPLETE', showSlider: false } }))}
+                                      style={{ flex: 1, padding: '8px 4px', background: opUpdate.status === 'COMPLETE' || opProgress === 100 ? 'rgba(46,204,154,0.15)' : 'transparent', border: `1px solid ${opUpdate.status === 'COMPLETE' || opProgress === 100 ? '#2ECC9A' : '#1E2A35'}`, borderRadius: 6, color: opUpdate.status === 'COMPLETE' || opProgress === 100 ? '#2ECC9A' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                                      Complete
+                                    </button>
+                                  </div>
+
+                                  {/* Delay panel */}
+                                  {opUpdate.status === 'DELAYED' && delayPanel[opKey] !== undefined && (
+                                    <div style={{ marginTop: 10, padding: '12px', background: 'rgba(224,90,90,0.06)', border: '1px solid rgba(224,90,90,0.2)', borderRadius: 8 }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                                        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#E05A5A' }}>Delay Details</span>
+                                        <button
+                                          onClick={() => {
+                                            setDelayPanel(prev => { const n = { ...prev }; delete n[opKey]; return n; });
+                                            setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], status: 'PENDING' } }));
+                                          }}
+                                          style={{ background: 'transparent', border: 'none', color: '#2E4050', cursor: 'pointer', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, textTransform: 'uppercase' }}>
+                                          Cancel
+                                        </button>
+                                      </div>
+                                      <textarea
+                                        rows={2}
+                                        placeholder="Reason for delay..."
+                                        value={delayPanel[opKey]?.reason || ''}
+                                        onChange={e => setDelayPanel(prev => ({ ...prev, [opKey]: { ...prev[opKey], reason: e.target.value } }))}
+                                        style={{ width: '100%', background: '#141B22', border: '1px solid rgba(224,90,90,0.2)', borderRadius: 6, padding: '8px 10px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#E8EDF2', outline: 'none', lineHeight: 1.5, marginBottom: 12, resize: 'none' }}
+                                      />
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                                        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#5A7080' }}>Delay Duration</span>
+                                        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, color: '#E05A5A' }}>{delayPanel[opKey]?.hours || 1}h</span>
+                                      </div>
+                                      <input
+                                        type="range" min={0.5} max={48} step={0.5}
+                                        value={delayPanel[opKey]?.hours || 1}
+                                        onChange={e => setDelayPanel(prev => ({ ...prev, [opKey]: { ...prev[opKey], hours: Number(e.target.value) } }))}
+                                        style={{ accentColor: '#E05A5A' }}
+                                      />
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                                        <span style={{ fontSize: 8, color: '#2E4050' }}>0.5h</span>
+                                        <span style={{ fontSize: 8, color: '#2E4050' }}>48h</span>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Note */}
+                        <div style={{ padding: '12px 16px', borderBottom: '1px solid #1E2A35' }}>
+                          <textarea
+                            rows={2}
+                            placeholder="Add a note — delays, issues, anything relevant..."
+                            value={woUpdate.note}
+                            onChange={e => setUpdates(prev => ({ ...prev, [woKey]: { ...prev[woKey], note: e.target.value } }))}
+                            style={{ width: '100%', background: '#141B22', border: '1px solid #1E2A35', borderRadius: 8, padding: '10px 12px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#E8EDF2', outline: 'none', lineHeight: 1.5 }}
+                          />
+                        </div>
+
+                        {/* Submit */}
+                        <div style={{ padding: '12px 16px' }}>
+                          <button
+                            onClick={() => submitWO(woKey)}
+                            style={{ width: '100%', padding: '14px', background: isSubmitted ? 'rgba(46,204,154,0.15)' : '#2ECC9A', border: isSubmitted ? '1px solid #2ECC9A' : 'none', borderRadius: 10, color: isSubmitted ? '#2ECC9A' : '#040D0A', fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.3s' }}>
+                            {isSubmitted ? '✓ Update Submitted' : 'Submit Update'}
+                          </button>
+                        </div>
+
+                      </div>
+                    )}
+
+                  </div>
+                );
+              })
           )}
         </div>
       </div>
