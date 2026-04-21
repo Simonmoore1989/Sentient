@@ -160,7 +160,8 @@ function VendorField() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                       <div style={{ textAlign: 'right' }}>
                         <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: progressColor }}>{progress}%</div>
-                        <div style={{ fontSize: 8, color: '#2E4050' }}>Due {task.end}</div>
+                        <div style={{ fontSize: 8, color: '#2E4050' }}>{task.start}</div>
+<div style={{ fontSize: 8, color: '#2E4050' }}>→ {task.end}</div>
                       </div>
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2E4050" strokeWidth="2" style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
                         <polyline points="6 9 12 15 18 9"/>
@@ -196,15 +197,7 @@ function VendorField() {
                                   <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, color: opColor, marginLeft: 12 }}>{opProgress}%</span>
                                 </div>
 
-                                <input
-                                  type="range" min={0} max={100} step={5} value={opProgress}
-                                  onChange={e => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], progress: Number(e.target.value) } }))}
-                                  style={{ accentColor: opColor }}
-                                />
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2, marginBottom: 8 }}>
-                                  <span style={{ fontSize: 8, color: '#2E4050' }}>0%</span>
-                                  <span style={{ fontSize: 8, color: '#2E4050' }}>100%</span>
-                                </div>
+                                
 
                                 <button
                                   onClick={() => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], progress: 100 } }))}
@@ -217,12 +210,7 @@ function VendorField() {
                         </div>
                       )}
 
-                      {/* Overall WO Progress */}
-                      <div style={{ padding: '14px 16px', borderBottom: '1px solid #1E2A35' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#5A7080' }}>Overall WO Progress</div>
-                          <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: progressColor }}>{progress}%</span>
-                        </div>
+                      
                         <input
                           type="range" min={0} max={100} step={5} value={progress}
                           onChange={e => setUpdates(prev => ({ ...prev, [woKey]: { ...prev[woKey], progress: Number(e.target.value) } }))}
