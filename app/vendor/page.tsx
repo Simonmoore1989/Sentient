@@ -195,11 +195,23 @@ function VendorField() {
                                   <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, color: opColor, marginLeft: 12 }}>{opProgress}%</span>
                                 </div>
 
-                                <button
-                                  onClick={() => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], progress: opProgress === 100 ? 0 : 100 } }))}
-                                  style={{ padding: '6px 14px', background: opProgress === 100 ? 'rgba(46,204,154,0.15)' : 'transparent', border: `1px solid ${opProgress === 100 ? '#2ECC9A' : '#1E2A35'}`, borderRadius: 6, color: opProgress === 100 ? '#2ECC9A' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
-                                  {opProgress === 100 ? '✓ Complete' : 'Mark Complete'}
-                                </button>
+                                <div style={{ display: 'flex', gap: 6 }}>
+  <button
+    onClick={() => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], status: 'ON TRACK' } }))}
+    style={{ flex: 1, padding: '7px 6px', background: (updates[opKey] as any)?.status === 'ON TRACK' ? 'rgba(74,158,224,0.15)' : 'transparent', border: `1px solid ${(updates[opKey] as any)?.status === 'ON TRACK' ? '#4A9EE0' : '#1E2A35'}`, borderRadius: 6, color: (updates[opKey] as any)?.status === 'ON TRACK' ? '#4A9EE0' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>
+    On Track
+  </button>
+  <button
+    onClick={() => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], status: 'DELAYED' } }))}
+    style={{ flex: 1, padding: '7px 6px', background: (updates[opKey] as any)?.status === 'DELAYED' ? 'rgba(224,90,90,0.15)' : 'transparent', border: `1px solid ${(updates[opKey] as any)?.status === 'DELAYED' ? '#E05A5A' : '#1E2A35'}`, borderRadius: 6, color: (updates[opKey] as any)?.status === 'DELAYED' ? '#E05A5A' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>
+    Delay
+  </button>
+  <button
+    onClick={() => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], progress: opProgress === 100 ? 0 : 100, status: 'COMPLETE' } }))}
+    style={{ flex: 1, padding: '7px 6px', background: opProgress === 100 ? 'rgba(46,204,154,0.15)' : 'transparent', border: `1px solid ${opProgress === 100 ? '#2ECC9A' : '#1E2A35'}`, borderRadius: 6, color: opProgress === 100 ? '#2ECC9A' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer' }}>
+    Complete
+  </button>
+</div>
                               </div>
                             );
                           })}
