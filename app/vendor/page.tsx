@@ -13,6 +13,7 @@ function VendorField() {
   const [updates, setUpdates] = useState<Record<string, { progress: number; note: string; status: string; showSlider: boolean }>>({});
   const [submitted, setSubmitted] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('ALL');
   const holdTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   useEffect(() => {
@@ -159,8 +160,25 @@ function VendorField() {
           </div>
         </div>
 
-        {/* Content */}
-        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* Filter bar */}
+<div style={{ padding: '12px 16px', display: 'flex', gap: 8, borderBottom: '1px solid #1E2A35', background: '#0E1419' }}>
+  {[
+    { label: 'All', value: 'ALL' },
+    { label: 'In Progress', value: 'IN PROGRESS' },
+    { label: 'Not Started', value: 'PENDING' },
+    { label: 'Complete', value: 'COMPLETE' },
+  ].map(f => (
+    <button
+      key={f.value}
+      onClick={() => setFilter(f.value)}
+      style={{ flex: 1, padding: '7px 4px', border: `1px solid ${filter === f.value ? '#2ECC9A' : '#1E2A35'}`, borderRadius: 6, background: filter === f.value ? 'rgba(46,204,154,0.1)' : 'transparent', color: filter === f.value ? '#2ECC9A' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
+      {f.label}
+    </button>
+  ))}
+</div>
+
+{/* Content */}
+<div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
           {loading ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: '#2E4050', fontSize: 11 }}>Loading tasks...</div>
@@ -170,7 +188,7 @@ function VendorField() {
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 700, color: '#2E4050', letterSpacing: '0.1em', textAlign: 'center' }}>No tasks assigned to your team</div>
             </div>
           ) : (
-            tasks.map((task: any) => {
+            tasks.filter((task: any) => filter === 'ALL' || task.status === filter).map((task: any) => {
               const woKey = task.id;
               const woUpdate = updates[woKey] || { progress: task.progress || 0, note: '', status: task.status || 'PENDING', showSlider: false };
               const isExpanded = expanded.includes(woKey);
