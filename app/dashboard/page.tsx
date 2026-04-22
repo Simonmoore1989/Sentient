@@ -20,45 +20,7 @@ export default function Dashboard() {
   const [clientName, setClientName] = useState('');
   const [darkMode, setDarkMode] = useState(true);
 
-async function loadTasks() {useEffect(() => {
-    const channel = supabase
-      .channel('tasks-changes')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks' }, () => {
-        loadTasks();
-      })
-      .subscribe();
-
-  useEffect(() => {
-    setClientName(localStorage.getItem('client') || 'Client');
-    const saved = localStorage.getItem('darkMode');
-    if (saved !== null) setDarkMode(saved === 'true');
-
-    async function loadTasks() {
-      const { data: shutdownData } = await supabase
-        .from('shutdowns')
-        .select('id')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (shutdownData) {
-        const { data: supabaseTasks } = await supabase
-          .from('tasks')
-          .select('*')
-          .eq('shutdown_id', shutdownData.id);
-        if (supabaseTasks) setTasks(supabaseTasks);
-      } else {
-        const storedTasks = localStorage.getItem('tasks');
-        if (storedTasks) setTasks(JSON.parse(storedTasks));
-      }
-    }
-
-    loadTasks();
-  }, []);
-
-  
-    return () => { supabase.removeChannel(channel); };
-  }, []);
+  async function loadTasks() {
     const { data: shutdownData } = await supabase
       .from('shutdowns')
       .select('id')
@@ -78,6 +40,23 @@ async function loadTasks() {useEffect(() => {
     }
   }
 
+  useEffect(() => {
+    setClientName(localStorage.getItem('client') || 'Client');
+    const saved = localStorage.getItem('darkMode');
+    if (saved !== null) setDarkMode(saved === 'true');
+    loadTasks();
+  }, []);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('tasks-changes')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks' }, () => {
+        loadTasks();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   function toggleDark() {
     const next = !darkMode;
     setDarkMode(next);
@@ -88,7 +67,7 @@ async function loadTasks() {useEffect(() => {
     setExpanded(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   }
 
-  const filtered = tasks.filter(t => {
+  const filtered = tasks.filter((t: any) => {
     const matchFilter = activeFilter === 'ALL' || t.status === activeFilter;
     const matchSearch = !search ||
       t.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -256,7 +235,6 @@ async function loadTasks() {useEffect(() => {
                   const hasOps = task.ops && task.ops.length > 0;
                   return (
                     <>
-                      {/* WO Parent Row */}
                       <tr key={task.id} className="wo-row"
                         onClick={() => hasOps && toggleExpand(task.id)}
                         style={{ borderBottom: `1px solid ${th.border}`, cursor: hasOps ? 'pointer' : 'default', background: isExpanded ? th.surface : 'transparent' }}>
@@ -287,7 +265,6 @@ async function loadTasks() {useEffect(() => {
                         <td style={{ padding: '14px 16px', fontFamily: "'DM Mono', monospace", fontSize: 10, color: th.textSecondary }}>{task.duration}</td>
                       </tr>
 
-                      {/* Op Lines */}
                       {isExpanded && hasOps && task.ops.map((op: any, oi: number) => {
                         const opProgress = op.progress || 0;
                         const opStatus = opProgress === 100 ? 'COMPLETE' : opProgress > 0 ? 'IN PROGRESS' : 'PENDING';
