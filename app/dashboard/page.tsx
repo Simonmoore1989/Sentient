@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '../../lib/supabase';
 
 const statusMap: Record<string, { label: string; color: string; bg: string; glow?: string }> = {
   'COMPLETE':    { label: 'Complete',     color: '#2ECC9A', bg: 'rgba(46,204,154,0.12)' },
@@ -19,13 +20,63 @@ export default function Dashboard() {
   const [clientName, setClientName] = useState('');
   const [darkMode, setDarkMode] = useState(true);
 
+async function loadTasks() {useEffect(() => {
+    const channel = supabase
+      .channel('tasks-changes')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks' }, () => {
+        loadTasks();
+      })
+      .subscribe();
+
   useEffect(() => {
     setClientName(localStorage.getItem('client') || 'Client');
     const saved = localStorage.getItem('darkMode');
     if (saved !== null) setDarkMode(saved === 'true');
-    const storedTasks = localStorage.getItem('tasks');
-    if (storedTasks) setTasks(JSON.parse(storedTasks));
+
+    async function loadTasks() {
+      const { data: shutdownData } = await supabase
+        .from('shutdowns')
+        .select('id')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (shutdownData) {
+        const { data: supabaseTasks } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('shutdown_id', shutdownData.id);
+        if (supabaseTasks) setTasks(supabaseTasks);
+      } else {
+        const storedTasks = localStorage.getItem('tasks');
+        if (storedTasks) setTasks(JSON.parse(storedTasks));
+      }
+    }
+
+    loadTasks();
   }, []);
+
+  
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+    const { data: shutdownData } = await supabase
+      .from('shutdowns')
+      .select('id')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (shutdownData) {
+      const { data: supabaseTasks } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('shutdown_id', shutdownData.id);
+      if (supabaseTasks) setTasks(supabaseTasks);
+    } else {
+      const storedTasks = localStorage.getItem('tasks');
+      if (storedTasks) setTasks(JSON.parse(storedTasks));
+    }
+  }
 
   function toggleDark() {
     const next = !darkMode;
