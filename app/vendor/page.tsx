@@ -7,6 +7,9 @@ function VendorField() {
   const searchParams = useSearchParams();
   const teamsParam = searchParams.get('teams') || searchParams.get('team') || '';
   const teamIds = teamsParam.split(',').filter(Boolean);
+  const supervisorName = searchParams.get('name') || '';
+  const supervisorRole = searchParams.get('role') || '';
+  const clientParam = searchParams.get('client') || '';
 
   const [tasks, setTasks] = useState<any[]>([]);
   const [expanded, setExpanded] = useState<string[]>([]);
@@ -15,6 +18,9 @@ function VendorField() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
   const [delayPanel, setDelayPanel] = useState<Record<string, { reason: string; hours: number }>>({});
+  const [darkMode, setDarkMode] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const holdTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   useEffect(() => {
@@ -64,6 +70,13 @@ function VendorField() {
     loadTasks();
   }, []);
 
+  function getGreeting() {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  }
+
   function calculateOnTrackProgress(start: string, end: string): number {
     try {
       const parseDate = (str: string) => {
@@ -76,7 +89,7 @@ function VendorField() {
       const total = endDate.getTime() - startDate.getTime();
       const elapsed = now.getTime() - startDate.getTime();
       const pct = Math.round((elapsed / total) * 100);
-      return Math.min(100, Math.max(0, pct));
+      return Math.min(99, Math.max(0, pct));
     } catch {
       return 0;
     }
@@ -126,43 +139,127 @@ function VendorField() {
   const timeStr = now.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
   const dateStr = now.toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' });
 
+  const th = darkMode ? {
+    bg: '#080C0F', surface: '#0E1419', surface2: '#141B22',
+    border: '#1E2A35', textPrimary: '#E8EDF2', textSecondary: '#5A7080', textMuted: '#2E4050',
+  } : {
+    bg: '#F4F6F8', surface: '#FFFFFF', surface2: '#EDF0F3',
+    border: '#D8DEE5', textPrimary: '#0D1318', textSecondary: '#4A5D6B', textMuted: '#8FA0AE',
+  };
+
   return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #080C0F; }
+        body { background: ${th.bg}; }
         @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-        textarea::placeholder { color: #2E4050; font-family: 'DM Mono', monospace; font-size: 11px; }
+        textarea::placeholder { color: ${th.textMuted}; font-family: 'DM Mono', monospace; font-size: 11px; }
         textarea { resize: none; }
-        input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: #1E2A35; outline: none; }
+        input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: ${th.border}; outline: none; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #2ECC9A; cursor: pointer; box-shadow: 0 0 8px rgba(46,204,154,0.4); }
+        input[type=range].delay-slider::-webkit-slider-thumb { background: #E05A5A; box-shadow: 0 0 8px rgba(224,90,90,0.4); }
       `}</style>
 
-      <div style={{ minHeight: '100vh', background: '#080C0F', fontFamily: "'DM Mono', monospace", color: '#E8EDF2', paddingBottom: 40 }}>
+      <div style={{ minHeight: '100vh', background: th.bg, fontFamily: "'DM Mono', monospace", color: th.textPrimary, paddingBottom: 40 }} onClick={() => { setMenuOpen(false); setShowInfo(false); }}>
 
         {/* Header */}
-        <div style={{ background: '#0E1419', borderBottom: '1px solid #1E2A35', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 20, height: 20, border: '1.5px solid #2ECC9A', borderRadius: 4, display: 'grid', placeItems: 'center', background: 'rgba(46,204,154,0.1)' }}>
-              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="#2ECC9A" strokeWidth="1.5">
-                <path d="M8 2L14 5.5V10.5L8 14L2 10.5V5.5L8 2Z"/>
-                <circle cx="8" cy="8" r="2" fill="#2ECC9A" stroke="none"/>
-              </svg>
+        <div style={{ background: th.surface, borderBottom: `1px solid ${th.border}`, padding: '14px 16px', position: 'sticky', top: 0, zIndex: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 20, height: 20, border: '1.5px solid #2ECC9A', borderRadius: 4, display: 'grid', placeItems: 'center', background: 'rgba(46,204,154,0.1)' }}>
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="#2ECC9A" strokeWidth="1.5">
+                  <path d="M8 2L14 5.5V10.5L8 14L2 10.5V5.5L8 2Z"/>
+                  <circle cx="8" cy="8" r="2" fill="#2ECC9A" stroke="none"/>
+                </svg>
+              </div>
+              <div>
+                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1, color: th.textPrimary }}>
+                  Sentient {clientParam && <span style={{ color: th.textMuted, fontWeight: 400 }}>| {clientParam}</span>}
+                </div>
+                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#2ECC9A' }}>Field Supervision</div>
+              </div>
             </div>
-            <div>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1 }}>Sentient</div>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#2ECC9A' }}>Field Supervision</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, color: th.textPrimary }}>{timeStr}</div>
+                <div style={{ fontSize: 9, color: th.textMuted }}>{dateStr}</div>
+              </div>
+              {/* Menu button */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
+                  style={{ padding: '6px 8px', background: 'transparent', border: `1px solid ${th.border}`, borderRadius: 6, color: th.textSecondary, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                  </svg>
+                </button>
+                {menuOpen && (
+                  <div onClick={e => e.stopPropagation()} style={{ position: 'fixed', top: 70, right: 16, background: th.surface, border: `1px solid ${th.border}`, borderRadius: 10, padding: 8, minWidth: 200, zIndex: 99999, boxShadow: '0 16px 48px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {/* Dark/Light toggle */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 6 }} onClick={e => e.stopPropagation()}>
+                      <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: th.textSecondary }}>{darkMode ? 'Dark Mode' : 'Light Mode'}</span>
+                      <div onClick={() => setDarkMode(!darkMode)} style={{ width: 40, height: 22, background: darkMode ? th.surface2 : 'rgba(46,204,154,0.15)', border: `1px solid ${darkMode ? th.border : '#2ECC9A'}`, borderRadius: 100, position: 'relative', cursor: 'pointer', transition: 'all 0.3s' }}>
+                        <div style={{ position: 'absolute', top: 2, left: darkMode ? 2 : 20, width: 16, height: 16, borderRadius: '50%', background: darkMode ? th.textMuted : '#2ECC9A', transition: 'all 0.3s' }}></div>
+                      </div>
+                    </div>
+                    <div style={{ height: 1, background: th.border }}></div>
+                    {/* Shutdown Info */}
+                    <div
+                      onClick={() => { setShowInfo(true); setMenuOpen(false); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 6, cursor: 'pointer', fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: th.textSecondary }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      Shutdown Info
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, color: '#E8EDF2' }}>{timeStr}</div>
-            <div style={{ fontSize: 9, color: '#2E4050', letterSpacing: '0.1em' }}>{dateStr}</div>
-          </div>
+
+          {/* Welcome */}
+          {supervisorName && (
+            <div style={{ background: 'rgba(46,204,154,0.06)', border: '1px solid rgba(46,204,154,0.15)', borderRadius: 8, padding: '10px 14px' }}>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800, color: th.textPrimary }}>
+                {getGreeting()}, {supervisorName} 👋
+              </div>
+              {supervisorRole && (
+                <div style={{ fontSize: 9, color: '#2ECC9A', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 2 }}>{supervisorRole} Supervisor</div>
+              )}
+            </div>
+          )}
         </div>
 
+        {/* Shutdown Info Modal */}
+        {showInfo && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 99999, display: 'grid', placeItems: 'center' }} onClick={() => setShowInfo(false)}>
+            <div onClick={e => e.stopPropagation()} style={{ background: th.surface, border: `1px solid ${th.border}`, borderRadius: 14, padding: 24, width: '90%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, color: th.textPrimary }}>Shutdown Info</div>
+                <button onClick={() => setShowInfo(false)} style={{ background: 'transparent', border: 'none', color: th.textMuted, cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>×</button>
+              </div>
+              {[
+                { label: 'Contact List', icon: '👥' },
+                { label: 'Bus Schedule', icon: '🚌' },
+                { label: 'Flight Times', icon: '✈️' },
+                { label: 'Plant Map', icon: '🏭' },
+                { label: 'Camp Map', icon: '🗺️' },
+              ].map(item => (
+                <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, cursor: 'pointer' }}>
+                  <span style={{ fontSize: 18 }}>{item.icon}</span>
+                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: th.textSecondary }}>{item.label}</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={th.textMuted} strokeWidth="2" style={{ marginLeft: 'auto' }}><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+              ))}
+              <div style={{ fontSize: 9, color: th.textMuted, textAlign: 'center', letterSpacing: '0.1em' }}>DOCUMENTS COMING SOON</div>
+            </div>
+          </div>
+        )}
+
         {/* Filter bar */}
-        <div style={{ padding: '12px 16px', display: 'flex', gap: 8, borderBottom: '1px solid #1E2A35', background: '#0E1419' }}>
+        <div style={{ padding: '10px 16px', display: 'flex', gap: 8, borderBottom: `1px solid ${th.border}`, background: th.surface }}>
           {[
             { label: 'All', value: 'ALL' },
             { label: 'In Progress', value: 'IN PROGRESS' },
@@ -172,7 +269,7 @@ function VendorField() {
             <button
               key={f.value}
               onClick={() => setFilter(f.value)}
-              style={{ flex: 1, padding: '7px 4px', border: `1px solid ${filter === f.value ? '#2ECC9A' : '#1E2A35'}`, borderRadius: 6, background: filter === f.value ? 'rgba(46,204,154,0.1)' : 'transparent', color: filter === f.value ? '#2ECC9A' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
+              style={{ flex: 1, padding: '7px 4px', border: `1px solid ${filter === f.value ? '#2ECC9A' : th.border}`, borderRadius: 6, background: filter === f.value ? 'rgba(46,204,154,0.1)' : 'transparent', color: filter === f.value ? '#2ECC9A' : th.textMuted, fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
               {f.label}
             </button>
           ))}
@@ -182,11 +279,11 @@ function VendorField() {
         <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
           {loading ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: '#2E4050', fontSize: 11 }}>Loading tasks...</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: th.textMuted, fontSize: 11 }}>Loading tasks...</div>
           ) : tasks.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 12, opacity: 0.4 }}>
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2E4050" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 700, color: '#2E4050', letterSpacing: '0.1em', textAlign: 'center' }}>No tasks assigned to your team</div>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={th.textMuted} strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 700, color: th.textMuted, letterSpacing: '0.1em', textAlign: 'center' }}>No tasks assigned to your team</div>
             </div>
           ) : (
             tasks
@@ -197,31 +294,31 @@ function VendorField() {
                 const isExpanded = expanded.includes(woKey);
                 const isSubmitted = submitted[woKey];
                 const progress = woUpdate.progress;
-                const progressColor = woUpdate.status === 'DELAYED' ? '#E05A5A' : progress === 100 ? '#2ECC9A' : progress > 0 ? '#4A9EE0' : '#5A7080';
+                const progressColor = woUpdate.status === 'DELAYED' ? '#E05A5A' : progress === 100 ? '#2ECC9A' : progress > 0 ? '#4A9EE0' : th.textMuted;
                 const hasOps = task.ops && task.ops.length > 0;
 
                 return (
-                  <div key={task.id} style={{ background: '#0E1419', border: `1px solid ${isSubmitted ? '#2ECC9A' : '#1E2A35'}`, borderRadius: 12, overflow: 'hidden', animation: 'fadeIn 0.3s ease', transition: 'border-color 0.3s' }}>
+                  <div key={task.id} style={{ background: th.surface, border: `1px solid ${isSubmitted ? '#2ECC9A' : th.border}`, borderRadius: 12, overflow: 'hidden', animation: 'fadeIn 0.3s ease', transition: 'border-color 0.3s' }}>
 
                     {/* WO Header */}
                     <div onClick={() => toggleExpand(woKey)} style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 12 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                           <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#2ECC9A', background: 'rgba(46,204,154,0.1)', border: '1px solid rgba(46,204,154,0.2)', borderRadius: 4, padding: '2px 6px', whiteSpace: 'nowrap' }}>{task.wo}</span>
-                          <span style={{ fontSize: 9, color: '#2E4050', whiteSpace: 'nowrap' }}>{task.team}</span>
+                          <span style={{ fontSize: 9, color: th.textMuted, whiteSpace: 'nowrap' }}>{task.team}</span>
                         </div>
-                        <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800, color: '#E8EDF2', lineHeight: 1.3 }}>{task.name}</div>
+                        <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800, color: th.textPrimary, lineHeight: 1.3 }}>{task.name}</div>
                         {hasOps && (
-                          <div style={{ fontSize: 9, color: '#2E4050', marginTop: 4 }}>{task.ops.length} operation{task.ops.length > 1 ? 's' : ''}</div>
+                          <div style={{ fontSize: 9, color: th.textMuted, marginTop: 4 }}>{task.ops.length} operation{task.ops.length > 1 ? 's' : ''}</div>
                         )}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                         <div style={{ textAlign: 'right' }}>
                           <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: progressColor }}>{progress}%</div>
-                          <div style={{ fontSize: 8, color: '#2E4050' }}>{task.start}</div>
-                          <div style={{ fontSize: 8, color: '#2E4050' }}>→ {task.end}</div>
+                          <div style={{ fontSize: 8, color: th.textMuted }}>{task.start}</div>
+                          <div style={{ fontSize: 8, color: th.textMuted }}>→ {task.end}</div>
                         </div>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2E4050" strokeWidth="2" style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={th.textMuted} strokeWidth="2" style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
                           <polyline points="6 9 12 15 18 9"/>
                         </svg>
                       </div>
@@ -229,43 +326,43 @@ function VendorField() {
 
                     {/* Expanded content */}
                     {isExpanded && (
-                      <div style={{ borderTop: '1px solid #1E2A35' }}>
+                      <div style={{ borderTop: `1px solid ${th.border}` }}>
 
                         {/* Op Lines */}
                         {hasOps && (
-                          <div style={{ borderBottom: '1px solid #1E2A35' }}>
+                          <div style={{ borderBottom: `1px solid ${th.border}` }}>
                             {task.ops.map((op: any, oi: number) => {
                               const opKey = `${task.id}-op-${oi}`;
                               const opUpdate = updates[opKey] || { progress: op.progress || 0, note: '', status: 'PENDING', showSlider: false };
                               const opProgress = opUpdate.progress;
-                              const opColor = opUpdate.status === 'DELAYED' ? '#E05A5A' : opProgress === 100 ? '#2ECC9A' : opProgress > 0 ? '#4A9EE0' : '#5A7080';
+                              const opColor = opUpdate.status === 'DELAYED' ? '#E05A5A' : opProgress === 100 ? '#2ECC9A' : opProgress > 0 ? '#4A9EE0' : th.textMuted;
 
                               return (
-                                <div key={opKey} style={{ padding: '12px 16px', borderBottom: oi < task.ops.length - 1 ? '1px solid #141B22' : 'none' }}>
+                                <div key={opKey} style={{ padding: '12px 16px', borderBottom: oi < task.ops.length - 1 ? `1px solid ${th.surface2}` : 'none' }}>
 
                                   {/* Op header */}
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#2E4050', background: '#141B22', border: '1px solid #1E2A35', borderRadius: 4, padding: '2px 6px', whiteSpace: 'nowrap' }}>OP {op.op}</span>
+                                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: th.textMuted, background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 4, padding: '2px 6px', whiteSpace: 'nowrap' }}>OP {op.op}</span>
                                         {op.crew && op.crew !== task.team && (
-                                          <span style={{ fontSize: 9, color: '#2E4050' }}>{op.crew}</span>
+                                          <span style={{ fontSize: 9, color: th.textMuted }}>{op.crew}</span>
                                         )}
                                       </div>
-                                      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 600, color: '#5A7080' }}>{op.name}</div>
+                                      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 600, color: th.textSecondary }}>{op.name}</div>
                                     </div>
                                     <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, color: opColor, marginLeft: 12 }}>{opProgress}%</span>
                                   </div>
 
                                   {/* Manual slider */}
                                   {opUpdate.showSlider && (
-                                    <div style={{ marginBottom: 12, padding: '10px 12px', background: '#141B22', borderRadius: 8, border: '1px solid #1E2A35' }}>
+                                    <div style={{ marginBottom: 12, padding: '10px 12px', background: th.surface2, borderRadius: 8, border: `1px solid ${th.border}` }}>
                                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                                        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#5A7080' }}>Set Progress</span>
+                                        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: th.textSecondary }}>Set Progress</span>
                                         <button
                                           onClick={() => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], showSlider: false } }))}
-                                          style={{ background: 'transparent', border: 'none', color: '#2ECC9A', cursor: 'pointer', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, textTransform: 'uppercase' }}>
-                                          Done ✓
+                                          style={{ background: 'transparent', border: 'none', color: '#FFFFFF', cursor: 'pointer', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, textTransform: 'uppercase' }}>
+                                          Done
                                         </button>
                                       </div>
                                       <input
@@ -274,9 +371,9 @@ function VendorField() {
                                         style={{ accentColor: '#2ECC9A' }}
                                       />
                                       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-                                        <span style={{ fontSize: 8, color: '#2E4050' }}>0%</span>
+                                        <span style={{ fontSize: 8, color: th.textMuted }}>0%</span>
                                         <span style={{ fontSize: 8, color: '#2ECC9A', fontWeight: 700 }}>{opProgress}%</span>
-                                        <span style={{ fontSize: 8, color: '#2E4050' }}>100%</span>
+                                        <span style={{ fontSize: 8, color: th.textMuted }}>100%</span>
                                       </div>
                                     </div>
                                   )}
@@ -288,7 +385,7 @@ function VendorField() {
                                       onTouchEnd={() => handleOnTrackRelease(opKey, op.start, op.end)}
                                       onMouseDown={() => handleOnTrackPress(opKey, op.start, op.end)}
                                       onMouseUp={() => handleOnTrackRelease(opKey, op.start, op.end)}
-                                      style={{ flex: 1, padding: '8px 4px', background: opUpdate.status === 'IN PROGRESS' ? 'rgba(74,158,224,0.15)' : 'transparent', border: `1px solid ${opUpdate.status === 'IN PROGRESS' ? '#4A9EE0' : '#1E2A35'}`, borderRadius: 6, color: opUpdate.status === 'IN PROGRESS' ? '#4A9EE0' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                                      style={{ flex: 1, padding: '8px 4px', background: opUpdate.status === 'IN PROGRESS' ? 'rgba(74,158,224,0.15)' : 'transparent', border: `1px solid ${opUpdate.status === 'IN PROGRESS' ? '#4A9EE0' : th.border}`, borderRadius: 6, color: opUpdate.status === 'IN PROGRESS' ? '#4A9EE0' : th.textMuted, fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
                                       On Track
                                     </button>
                                     <button
@@ -296,12 +393,12 @@ function VendorField() {
                                         setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], status: 'DELAYED', showSlider: false } }));
                                         setDelayPanel(prev => ({ ...prev, [opKey]: prev[opKey] || { reason: '', hours: 1 } }));
                                       }}
-                                      style={{ flex: 1, padding: '8px 4px', background: opUpdate.status === 'DELAYED' ? 'rgba(224,90,90,0.15)' : 'transparent', border: `1px solid ${opUpdate.status === 'DELAYED' ? '#E05A5A' : '#1E2A35'}`, borderRadius: 6, color: opUpdate.status === 'DELAYED' ? '#E05A5A' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                                      style={{ flex: 1, padding: '8px 4px', background: opUpdate.status === 'DELAYED' ? 'rgba(224,90,90,0.15)' : 'transparent', border: `1px solid ${opUpdate.status === 'DELAYED' ? '#E05A5A' : th.border}`, borderRadius: 6, color: opUpdate.status === 'DELAYED' ? '#E05A5A' : th.textMuted, fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
                                       Delay
                                     </button>
                                     <button
                                       onClick={() => setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], progress: opProgress === 100 ? 0 : 100, status: opProgress === 100 ? 'PENDING' : 'COMPLETE', showSlider: false } }))}
-                                      style={{ flex: 1, padding: '8px 4px', background: opUpdate.status === 'COMPLETE' || opProgress === 100 ? 'rgba(46,204,154,0.15)' : 'transparent', border: `1px solid ${opUpdate.status === 'COMPLETE' || opProgress === 100 ? '#2ECC9A' : '#1E2A35'}`, borderRadius: 6, color: opUpdate.status === 'COMPLETE' || opProgress === 100 ? '#2ECC9A' : '#2E4050', fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                                      style={{ flex: 1, padding: '8px 4px', background: opUpdate.status === 'COMPLETE' || opProgress === 100 ? 'rgba(46,204,154,0.15)' : 'transparent', border: `1px solid ${opUpdate.status === 'COMPLETE' || opProgress === 100 ? '#2ECC9A' : th.border}`, borderRadius: 6, color: opUpdate.status === 'COMPLETE' || opProgress === 100 ? '#2ECC9A' : th.textMuted, fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
                                       Complete
                                     </button>
                                   </div>
@@ -316,7 +413,7 @@ function VendorField() {
                                             setDelayPanel(prev => { const n = { ...prev }; delete n[opKey]; return n; });
                                             setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], status: 'PENDING' } }));
                                           }}
-                                          style={{ background: 'transparent', border: 'none', color: '#2E4050', cursor: 'pointer', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, textTransform: 'uppercase' }}>
+                                          style={{ background: 'transparent', border: 'none', color: th.textMuted, cursor: 'pointer', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, textTransform: 'uppercase' }}>
                                           Cancel
                                         </button>
                                       </div>
@@ -325,21 +422,22 @@ function VendorField() {
                                         placeholder="Reason for delay..."
                                         value={delayPanel[opKey]?.reason || ''}
                                         onChange={e => setDelayPanel(prev => ({ ...prev, [opKey]: { ...prev[opKey], reason: e.target.value } }))}
-                                        style={{ width: '100%', background: '#141B22', border: '1px solid rgba(224,90,90,0.2)', borderRadius: 6, padding: '8px 10px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#E8EDF2', outline: 'none', lineHeight: 1.5, marginBottom: 12, resize: 'none' }}
+                                        style={{ width: '100%', background: th.surface2, border: '1px solid rgba(224,90,90,0.2)', borderRadius: 6, padding: '8px 10px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: th.textPrimary, outline: 'none', lineHeight: 1.5, marginBottom: 12, resize: 'none' }}
                                       />
                                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                                        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#5A7080' }}>Delay Duration</span>
+                                        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: th.textSecondary }}>Delay Duration</span>
                                         <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, color: '#E05A5A' }}>{delayPanel[opKey]?.hours || 1}h</span>
                                       </div>
                                       <input
-                                        type="range" min={0.5} max={48} step={0.5}
+                                        type="range"
+                                        className="delay-slider"
+                                        min={0.5} max={48} step={0.5}
                                         value={delayPanel[opKey]?.hours || 1}
                                         onChange={e => setDelayPanel(prev => ({ ...prev, [opKey]: { ...prev[opKey], hours: Number(e.target.value) } }))}
-                                        style={{ accentColor: '#E05A5A' }}
                                       />
                                       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-                                        <span style={{ fontSize: 8, color: '#2E4050' }}>0.5h</span>
-                                        <span style={{ fontSize: 8, color: '#2E4050' }}>48h</span>
+                                        <span style={{ fontSize: 8, color: th.textMuted }}>0.5h</span>
+                                        <span style={{ fontSize: 8, color: th.textMuted }}>48h</span>
                                       </div>
                                     </div>
                                   )}
@@ -349,17 +447,6 @@ function VendorField() {
                             })}
                           </div>
                         )}
-
-                        {/* Note */}
-                        <div style={{ padding: '12px 16px', borderBottom: '1px solid #1E2A35' }}>
-                          <textarea
-                            rows={2}
-                            placeholder="Add a note — delays, issues, anything relevant..."
-                            value={woUpdate.note}
-                            onChange={e => setUpdates(prev => ({ ...prev, [woKey]: { ...prev[woKey], note: e.target.value } }))}
-                            style={{ width: '100%', background: '#141B22', border: '1px solid #1E2A35', borderRadius: 8, padding: '10px 12px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: '#E8EDF2', outline: 'none', lineHeight: 1.5 }}
-                          />
-                        </div>
 
                         {/* Submit */}
                         <div style={{ padding: '12px 16px' }}>
