@@ -122,12 +122,26 @@ function VendorField() {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    const newProgress = update.progress;
+    // Calculate overall progress from op lines if they exist
+    let newProgress = update.progress;
+    let updatedOps = task.ops || [];
+
+    if (task.ops && task.ops.length > 0) {
+      updatedOps = task.ops.map((op: any, i: number) => {
+        const opKey = `${taskId}-op-${i}`;
+        const opUpdate = updates[opKey];
+        return opUpdate ? { ...op, progress: opUpdate.progress, status: opUpdate.status } : op;
+      });
+
+      const totalOpProgress = updatedOps.reduce((sum: number, op: any) => sum + (op.progress || 0), 0);
+      newProgress = Math.round(totalOpProgress / updatedOps.length);
+    }
+
     const newStatus = update.status === 'DELAYED' ? 'DELAYED' : newProgress === 100 ? 'COMPLETE' : newProgress > 0 ? 'IN PROGRESS' : 'PENDING';
 
     await supabase
       .from('tasks')
-      .update({ progress: newProgress, status: newStatus })
+      .update({ progress: newProgress, status: newStatus, ops: updatedOps })
       .eq('id', taskId)
       .eq('shutdown_id', task.shutdown_id);
 
