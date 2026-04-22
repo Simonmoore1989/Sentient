@@ -61,6 +61,8 @@ export default function VendorSetup() {
   const [promptMode, setPromptMode] = useState<'manual' | 'automatic'>('manual');
   const [promptInterval, setPromptInterval] = useState(2);
   const [emailModal, setEmailModal] = useState<{ role: string; link: string } | null>(null);
+const [firstName, setFirstName] = useState('');
+const [lastName, setLastName] = useState('');
   const [emailInput, setEmailInput] = useState('');
   const [darkMode, setDarkMode] = useState(true);
 
@@ -115,23 +117,33 @@ export default function VendorSetup() {
     );
   }
 
-  function getCombinedLink() {
-    const base = window.location.origin;
-    return `${base}/vendor?teams=${selectedTeams.join(',')}`;
-  }
+  function getCombinedLink(name?: string, role?: string) {
+  const base = window.location.origin;
+  const client = localStorage.getItem('client') || '';
+  let url = `${base}/vendor?teams=${selectedTeams.join(',')}`;
+  if (client) url += `&client=${encodeURIComponent(client)}`;
+  if (name) url += `&name=${encodeURIComponent(name)}`;
+  if (role) url += `&role=${encodeURIComponent(role)}`;
+  return url;
+}
 
   function openEmailModal(role: string) {
-    setEmailInput('');
-    setEmailModal({ role, link: getCombinedLink() });
-  }
+  setEmailInput('');
+  setFirstName('');
+  setLastName('');
+  setEmailModal({ role, link: getCombinedLink() });
+}
 
   function sendEmail() {
-    if (!emailInput) return;
-    setSentFlash(`✓ Link sent to ${emailInput}`);
-    setTimeout(() => setSentFlash(null), 3000);
-    setEmailModal(null);
-    setEmailInput('');
-  }
+  if (!emailInput || !firstName) return;
+  const link = getCombinedLink(firstName, emailModal?.role);
+  setSentFlash(`✓ Link sent to ${firstName} — ${emailInput}`);
+  setTimeout(() => setSentFlash(null), 3000);
+  setEmailModal(null);
+  setEmailInput('');
+  setFirstName('');
+  setLastName('');
+}
 
   const menuItems = [
     { label: 'Overview', icon: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z', path: '/overview' },
@@ -175,18 +187,36 @@ export default function VendorSetup() {
                 Enter the supervisor's email address to send their field access link.
               </div>
             </div>
-            <div style={{ background: th.surface2, border: `1px solid rgba(46,204,154,0.2)`, borderRadius: 6, padding: '8px 12px', fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#2ECC9A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {emailModal.link}
-            </div>
-            <input
-              type="email"
-              placeholder="supervisor@company.com"
-              value={emailInput}
-              onChange={e => setEmailInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && sendEmail()}
-              autoFocus
-              style={{ background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: th.textPrimary, outline: 'none', width: '100%' }}
-            />
+            <div style={{ display: 'flex', gap: 8 }}>
+  <input
+    type="text"
+    placeholder="First Name"
+    value={firstName}
+    onChange={e => setFirstName(e.target.value)}
+    autoFocus
+    style={{ flex: 1, background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: th.textPrimary, outline: 'none' }}
+  />
+  <input
+    type="text"
+    placeholder="Last Name"
+    value={lastName}
+    onChange={e => setLastName(e.target.value)}
+    style={{ flex: 1, background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: th.textPrimary, outline: 'none' }}
+  />
+</div>
+<input
+  type="email"
+  placeholder="supervisor@company.com"
+  value={emailInput}
+  onChange={e => setEmailInput(e.target.value)}
+  onKeyDown={e => e.key === 'Enter' && sendEmail()}
+  style={{ background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: th.textPrimary, outline: 'none', width: '100%' }}
+/>
+{firstName && (
+  <div style={{ background: th.surface2, border: `1px solid rgba(46,204,154,0.2)`, borderRadius: 6, padding: '8px 12px', fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#2ECC9A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+    {getCombinedLink(firstName, emailModal.role)}
+  </div>
+)}
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setEmailModal(null)} style={{ flex: 1, padding: '10px', background: 'transparent', border: `1px solid ${th.border}`, borderRadius: 8, color: th.textSecondary, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
                 Cancel
