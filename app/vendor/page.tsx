@@ -307,9 +307,16 @@ function VendorField() {
                 const woUpdate = updates[woKey] || { progress: task.progress || 0, note: '', status: task.status || 'PENDING', showSlider: false };
                 const isExpanded = expanded.includes(woKey);
                 const isSubmitted = submitted[woKey];
-                const progress = woUpdate.progress;
-                const progressColor = woUpdate.status === 'DELAYED' ? '#E05A5A' : progress === 100 ? '#2ECC9A' : progress > 0 ? '#4A9EE0' : th.textMuted;
                 const hasOps = task.ops && task.ops.length > 0;
+const progress = hasOps
+  ? Math.round(task.ops.reduce((sum: number, _op: any, i: number) => {
+      const opKey = `${task.id}-op-${i}`;
+      const opUpdate = updates[opKey];
+      return sum + (opUpdate ? opUpdate.progress : (_op.progress || 0));
+    }, 0) / task.ops.length)
+  : woUpdate.progress;
+                const progressColor = woUpdate.status === 'DELAYED' ? '#E05A5A' : progress === 100 ? '#2ECC9A' : progress > 0 ? '#4A9EE0' : th.textMuted;
+                
 
                 return (
                   <div key={task.id} style={{ background: th.surface, border: `1px solid ${isSubmitted ? '#2ECC9A' : th.border}`, borderRadius: 12, overflow: 'hidden', animation: 'fadeIn 0.3s ease', transition: 'border-color 0.3s' }}>
