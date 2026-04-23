@@ -115,7 +115,7 @@ export default function Dashboard() {
       `}</style>
 
       <div
-        style={{ position: 'relative', zIndex: 1, height: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'DM Mono', monospace", color: th.textPrimary, background: th.bg }}
+        style={{ position: 'relative', zIndex: 1, height: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'Space Grotesk', sans-serif", color: th.textPrimary, background: 'transparent' }}
         onClick={() => setMenuOpen(false)}
       >
         {/* Header */}

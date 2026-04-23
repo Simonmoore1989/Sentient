@@ -140,10 +140,10 @@ function VendorField() {
     const newStatus = update.status === 'DELAYED' ? 'DELAYED' : newProgress === 100 ? 'COMPLETE' : newProgress > 0 ? 'IN PROGRESS' : 'PENDING';
 
     await supabase
-      .from('tasks')
-      .update({ progress: newProgress, status: newStatus, ops: updatedOps })
-      .eq('id', taskId)
-      .eq('shutdown_id', task.shutdown_id);
+        .from('tasks')
+        .update({ progress: newProgress, status: newStatus, ops: updatedOps })
+        .eq('id', taskId)
+        .eq('shutdown_id', task.shutdown_id);
 
     setSubmitted(prev => ({ ...prev, [taskId]: true }));
     setTimeout(() => setSubmitted(prev => ({ ...prev, [taskId]: false })), 3000);
