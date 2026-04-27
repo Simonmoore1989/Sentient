@@ -118,8 +118,13 @@ function VendorField() {
   }
 
   async function submitWO(taskId: string) {
+    console.log('submitWO called for', taskId);
     const update = updates[taskId];
     const task = tasks.find(t => t.id === taskId);
+    console.log('task found:', task?.id, 'update:', update);
+    console.log('op updates:', task.ops?.map((_: any, i: number) => ({ key: `${taskId}-op-${i}`, update: updates[`${taskId}-op-${i}`] })));
+    console.log('anyOpDelayed:', task.ops?.some((_: any, i: number) => updates[`${taskId}-op-${i}`]?.status === 'DELAYED'));
+console.log('newStatus will be:', task.ops?.some((_: any, i: number) => updates[`${taskId}-op-${i}`]?.status === 'DELAYED') ? 'DELAYED' : 'other');
     if (!task) return;
 
     // Calculate overall progress from op lines if they exist
@@ -137,7 +142,12 @@ function VendorField() {
       newProgress = Math.round(totalOpProgress / updatedOps.length);
     }
 
-    const newStatus = update.status === 'DELAYED' ? 'DELAYED' : newProgress === 100 ? 'COMPLETE' : newProgress > 0 ? 'IN PROGRESS' : 'PENDING';
+    const anyOpDelayed = task.ops && task.ops.some((_: any, i: number) => {
+      const opKey = `${taskId}-op-${i}`;
+      return updates[opKey]?.status === 'DELAYED';
+    });
+
+    const newStatus = anyOpDelayed ? 'DELAYED' : update.status === 'DELAYED' ? 'DELAYED' : newProgress === 100 ? 'COMPLETE' : newProgress > 0 ? 'IN PROGRESS' : 'PENDING';
 
     const updatedOpsWithDelay = updatedOps.map((op: any, i: number) => {
       const opKey = `${taskId}-op-${i}`;
@@ -148,11 +158,13 @@ function VendorField() {
       return op;
     });
 
-    await supabase
+    const { error } = await supabase
       .from('tasks')
       .update({ progress: newProgress, status: newStatus, ops: updatedOpsWithDelay })
       .eq('id', taskId)
       .eq('shutdown_id', task.shutdown_id);
+
+    console.log('Supabase update result — status:', newStatus, 'error:', error);
 
     setSubmitted(prev => ({ ...prev, [taskId]: true }));
     setTimeout(() => setSubmitted(prev => ({ ...prev, [taskId]: false })), 3000);

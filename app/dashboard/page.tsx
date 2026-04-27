@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 
@@ -10,6 +10,41 @@ const statusMap: Record<string, { label: string; color: string; bg: string; glow
   'PENDING':     { label: 'Yet To Start', color: '#5A7080', bg: 'rgba(90,112,128,0.12)' },
 };
 
+function calculateAutoDelay(op: any): number {
+  if (!op.delayHours || op.delayHours === 0) return 0;
+  try {
+    const parseDate = (str: string) => {
+      if (!str) return null;
+      const parts = str.split(/[/: ]/).map(Number);
+      if (parts.length >= 5) return new Date(parts[2], parts[1] - 1, parts[0], parts[3], parts[4]);
+      return new Date(str);
+    };
+    const start = parseDate(op.start);
+    const end = parseDate(op.end);
+    if (!start || !end) return op.delayHours;
+    const now = new Date();
+    const total = end.getTime() - start.getTime();
+    const elapsed = now.getTime() - start.getTime();
+    const expectedProgress = Math.min(100, Math.max(0, (elapsed / total) * 100));
+    const actualProgress = op.progress || 0;
+    const progressDiff = actualProgress - expectedProgress;
+    if (progressDiff <= 0) return op.delayHours;
+    const hoursTotal = total / (1000 * 60 * 60);
+    const hoursRecovered = (progressDiff / 100) * hoursTotal;
+    return Math.max(0, op.delayHours - hoursRecovered);
+  } catch {
+    return op.delayHours;
+  }
+}
+
+function isCritical(task: any, allTasks: any[]): boolean {
+  if (!task.end) return false;
+  return allTasks.some(other => {
+    if (other.id === task.id) return false;
+    return other.start === task.end;
+  });
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const [tasks, setTasks] = useState<any[]>([]);
@@ -19,6 +54,7 @@ export default function Dashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [clientName, setClientName] = useState('');
   const [darkMode, setDarkMode] = useState(true);
+  const [hoveredDelay, setHoveredDelay] = useState<string | null>(null);
 
   async function loadTasks() {
     const { data: shutdownData } = await supabase
@@ -68,12 +104,13 @@ export default function Dashboard() {
   }
 
   const filtered = tasks.filter((t: any) => {
+    if (activeFilter === 'CRITICAL') return isCritical(t, tasks);
     const matchFilter = activeFilter === 'ALL' || t.status === activeFilter;
     const matchSearch = !search ||
-      t.name.toLowerCase().includes(search.toLowerCase()) ||
-      t.wo.toLowerCase().includes(search.toLowerCase()) ||
+      t.name?.toLowerCase().includes(search.toLowerCase()) ||
+      t.wo?.toLowerCase().includes(search.toLowerCase()) ||
       (t.team && t.team.toLowerCase().includes(search.toLowerCase())) ||
-      (t.ops && t.ops.some((op: any) => op.name.toLowerCase().includes(search.toLowerCase())));
+      (t.ops && t.ops.some((op: any) => op.name?.toLowerCase().includes(search.toLowerCase())));
     return matchFilter && matchSearch;
   });
 
@@ -82,6 +119,7 @@ export default function Dashboard() {
   const inProgress = tasks.filter(t => t.status === 'IN PROGRESS').length;
   const delayed = tasks.filter(t => t.status === 'DELAYED').length;
   const pending = tasks.filter(t => t.status === 'PENDING').length;
+  const critical = tasks.filter(t => isCritical(t, tasks)).length;
 
   const menuItems = [
     { label: 'Overview', icon: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z', path: '/overview' },
@@ -103,7 +141,7 @@ export default function Dashboard() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; background: ${th.bg}; }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
@@ -112,12 +150,28 @@ export default function Dashboard() {
         .op-row:hover { background: ${darkMode ? '#0a1018' : '#f0f2f5'} !important; }
         .menu-item:hover { background: ${th.surface2} !important; }
         .menu-item-danger:hover { background: rgba(224,90,90,0.08) !important; }
+        .delay-badge { position: relative; cursor: default; }
+        .delay-popup {
+          position: absolute; bottom: calc(100% + 6px); left: 50%;
+          transform: translateX(-50%);
+          background: #0E1419; border: 1px solid rgba(224,90,90,0.3);
+          border-radius: 6px; padding: 8px 12px; min-width: 160px; max-width: 240px;
+          font-family: 'Space Grotesk', sans-serif; font-size: 11px; color: #E8EDF2;
+          line-height: 1.5; z-index: 9999; pointer-events: none;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+          white-space: normal; word-break: break-word;
+        }
+        .delay-popup::after {
+          content: ''; position: absolute; top: 100%; left: 50%;
+          transform: translateX(-50%);
+          border: 5px solid transparent;
+          border-top-color: rgba(224,90,90,0.3);
+        }
       `}</style>
 
-      <div
-        style={{ position: 'relative', zIndex: 1, height: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'Space Grotesk', sans-serif", color: th.textPrimary, background: 'transparent' }}
-        onClick={() => setMenuOpen(false)}
-      >
+      <div style={{ position: 'relative', zIndex: 1, height: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'Space Grotesk', sans-serif", color: th.textPrimary, background: th.bg }}
+        onClick={() => setMenuOpen(false)}>
+
         {/* Header */}
         <header style={{ padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${th.border}`, flexShrink: 0, background: th.headerBg }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -147,19 +201,19 @@ export default function Dashboard() {
                 {menuItems.map(item => (
                   <div key={item.label} className="menu-item"
                     onClick={() => { if (item.path) router.push(item.path); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 5, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: th.textSecondary, cursor: 'pointer' }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 5, fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: th.textSecondary, cursor: 'pointer' }}>
                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d={item.icon}/></svg>
                     {item.label}
                   </div>
                 ))}
                 <div style={{ height: 1, background: th.border, margin: '4px 0' }}></div>
-                <div className="menu-item menu-item-danger" onClick={() => router.push('/')} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 5, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#E05A5A', cursor: 'pointer' }}>
+                <div className="menu-item menu-item-danger" onClick={() => router.push('/')} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 5, fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#E05A5A', cursor: 'pointer' }}>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
                   New Session
                 </div>
                 <div style={{ height: 1, background: th.border, margin: '4px 0' }}></div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px' }} onClick={e => e.stopPropagation()}>
-                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: th.textSecondary }}>{darkMode ? 'Dark Mode' : 'Light Mode'}</span>
+                  <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: th.textSecondary }}>{darkMode ? 'Dark Mode' : 'Light Mode'}</span>
                   <div onClick={toggleDark} style={{ width: 40, height: 22, background: darkMode ? th.surface2 : 'rgba(46,204,154,0.15)', border: `1px solid ${darkMode ? th.border : '#2ECC9A'}`, borderRadius: 100, position: 'relative', cursor: 'pointer', transition: 'all 0.3s' }}>
                     <div style={{ position: 'absolute', top: 2, left: darkMode ? 2 : 20, width: 16, height: 16, borderRadius: '50%', background: darkMode ? th.textMuted : '#2ECC9A', transition: 'all 0.3s' }}></div>
                   </div>
@@ -170,16 +224,17 @@ export default function Dashboard() {
         </header>
 
         {/* Stats Bar */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', borderBottom: `1px solid ${th.border}`, flexShrink: 0, background: th.bg }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', borderBottom: `1px solid ${th.border}`, flexShrink: 0, background: th.bg }}>
           {[
             { label: 'Total WOs', value: String(total), color: th.textPrimary, bar: th.textMuted, width: '100%' },
             { label: 'Complete', value: String(complete), color: '#2ECC9A', bar: '#2ECC9A', width: `${total ? Math.round(complete/total*100) : 0}%` },
             { label: 'In Progress', value: String(inProgress), color: '#4A9EE0', bar: '#4A9EE0', width: `${total ? Math.round(inProgress/total*100) : 0}%` },
             { label: 'Delayed', value: String(delayed), color: '#E05A5A', bar: '#E05A5A', width: `${total ? Math.round(delayed/total*100) : 0}%` },
             { label: 'Yet To Start', value: String(pending), color: th.textSecondary, bar: th.textMuted, width: `${total ? Math.round(pending/total*100) : 0}%` },
+            { label: 'Critical', value: String(critical), color: '#FF9F1C', bar: '#FF9F1C', width: `${total ? Math.round(critical/total*100) : 0}%` },
           ].map((s, i) => (
-            <div key={i} style={{ padding: '14px 24px', borderRight: i < 4 ? `1px solid ${th.border}` : 'none' }}>
-              <div style={{ fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, marginBottom: 4 }}>{s.label}</div>
+            <div key={i} style={{ padding: '14px 24px', borderRight: i < 5 ? `1px solid ${th.border}` : 'none' }}>
+              <div style={{ fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, marginBottom: 4, fontFamily: "'Space Grotesk', sans-serif" }}>{s.label}</div>
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: s.color }}>{s.value}</div>
               <div style={{ height: 2, background: th.border, borderRadius: 2, marginTop: 6, overflow: 'hidden' }}>
                 <div style={{ height: '100%', width: s.width, background: s.bar, borderRadius: 2 }}></div>
@@ -196,15 +251,16 @@ export default function Dashboard() {
               { label: 'In Progress', value: 'IN PROGRESS' },
               { label: 'Delayed', value: 'DELAYED' },
               { label: 'Yet To Start', value: 'PENDING' },
+              { label: 'Critical', value: 'CRITICAL' },
             ].map(f => (
               <button key={f.value} className="filter-btn" onClick={() => setActiveFilter(f.value)}
-                style={{ padding: '5px 14px', border: `1px solid ${activeFilter === f.value ? '#2ECC9A' : th.border}`, borderRadius: 100, color: activeFilter === f.value ? '#2ECC9A' : th.textSecondary, fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer', background: activeFilter === f.value ? 'rgba(46,204,154,0.08)' : 'transparent' } as React.CSSProperties}>
+                style={{ padding: '5px 14px', border: `1px solid ${activeFilter === f.value ? (f.value === 'CRITICAL' ? '#FF9F1C' : '#2ECC9A') : th.border}`, borderRadius: 100, color: activeFilter === f.value ? (f.value === 'CRITICAL' ? '#FF9F1C' : '#2ECC9A') : th.textSecondary, fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', background: activeFilter === f.value ? (f.value === 'CRITICAL' ? 'rgba(255,159,28,0.08)' : 'rgba(46,204,154,0.08)') : 'transparent' }}>
                 {f.label}
               </button>
             ))}
           </div>
           <input type="text" placeholder="Search WO, task or crew..." value={search} onChange={e => setSearch(e.target.value)}
-            style={{ background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 6, padding: '7px 12px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: th.textPrimary, outline: 'none', width: 240 }} />
+            style={{ background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 6, padding: '7px 12px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, color: th.textPrimary, outline: 'none', width: 240 }} />
         </div>
 
         {/* Table */}
@@ -213,19 +269,20 @@ export default function Dashboard() {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 12, opacity: 0.4 }}>
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={th.textMuted} strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 700, color: th.textMuted, letterSpacing: '0.1em' }}>No schedule loaded</div>
-              <div style={{ fontSize: 10, color: th.textMuted }}>Upload a CSV on the setup page to get started</div>
+              <div style={{ fontSize: 10, color: th.textMuted, fontFamily: "'Space Grotesk', sans-serif" }}>Upload a CSV on the setup page to get started</div>
             </div>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${th.border}`, position: 'sticky', top: 0, background: th.bg, zIndex: 2 }}>
                   <th style={{ padding: '12px 16px 12px 32px', width: 40 }}></th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, whiteSpace: 'nowrap' }}>WO</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted }}>Name</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, whiteSpace: 'nowrap' }}>Crew</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, whiteSpace: 'nowrap' }}>Status</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, whiteSpace: 'nowrap' }}>Start / Finish</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, whiteSpace: 'nowrap' }}>Duration</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, whiteSpace: 'nowrap' }}>WO</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted }}>Name</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, whiteSpace: 'nowrap' }}>Crew</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, whiteSpace: 'nowrap' }}>Status</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, whiteSpace: 'nowrap' }}>Delay</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, whiteSpace: 'nowrap' }}>Start / Finish</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, whiteSpace: 'nowrap' }}>Duration</th>
                 </tr>
               </thead>
               <tbody>
@@ -233,66 +290,99 @@ export default function Dashboard() {
                   const s = statusMap[task.status] || statusMap['PENDING'];
                   const isExpanded = expanded.includes(task.id);
                   const hasOps = task.ops && task.ops.length > 0;
+                  const isCrit = isCritical(task, tasks);
                   return (
                     <>
                       <tr key={task.id} className="wo-row"
                         onClick={() => hasOps && toggleExpand(task.id)}
                         style={{ borderBottom: `1px solid ${th.border}`, cursor: hasOps ? 'pointer' : 'default', background: isExpanded ? th.surface : 'transparent' }}>
                         <td style={{ padding: '14px 16px 14px 32px', width: 40 }}>
-                          {hasOps && (
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={th.textMuted} strokeWidth="2"
-                              style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-                              <polyline points="6 9 12 15 18 9"/>
-                            </svg>
-                          )}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {isCrit && <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#FF9F1C', flexShrink: 0 }} title="Critical Path" />}
+                            {hasOps && (
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={th.textMuted} strokeWidth="2"
+                                style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+                                <polyline points="6 9 12 15 18 9"/>
+                              </svg>
+                            )}
+                          </div>
                         </td>
-                        <td style={{ padding: '14px 16px', fontFamily: "'DM Mono', monospace", fontSize: 10, fontWeight: 700, color: '#2ECC9A', whiteSpace: 'nowrap' }}>{task.wo}</td>
+                        <td style={{ padding: '14px 16px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, fontWeight: 700, color: '#2ECC9A', whiteSpace: 'nowrap' }}>{task.wo}</td>
                         <td style={{ padding: '14px 16px' }}>
                           <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 800, color: th.textPrimary }}>{task.name}</div>
-                          {hasOps && <div style={{ fontSize: 9, color: th.textMuted, marginTop: 2 }}>{task.ops.length} operation{task.ops.length > 1 ? 's' : ''}</div>}
+                          {hasOps && <div style={{ fontSize: 9, color: th.textMuted, marginTop: 2, fontFamily: "'Space Grotesk', sans-serif" }}>{task.ops.length} operation{task.ops.length > 1 ? 's' : ''}</div>}
                         </td>
-                        <td style={{ padding: '14px 16px', fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, color: th.textSecondary }}>{task.team}</td>
+                        <td style={{ padding: '14px 16px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, fontWeight: 500, color: th.textSecondary }}>{task.team}</td>
                         <td style={{ padding: '14px 16px' }}>
                           <div style={{ position: 'relative', width: 160, height: 18, borderRadius: 4, overflow: 'hidden', background: th.surface2 }}>
                             <div style={{ position: 'absolute', inset: 0, width: `${task.progress}%`, background: s.bg, borderRadius: 4 }}></div>
                             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 8px', gap: 5 }}>
                               <div style={{ width: 5, height: 5, borderRadius: '50%', background: s.color, boxShadow: s.glow ? `0 0 4px ${s.glow}` : 'none', animation: s.glow ? 'pulse 2s infinite' : 'none', flexShrink: 0 }}></div>
-                              <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: s.color }}>{s.label} — {task.progress}%</span>
+                              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 8, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: s.color }}>{s.label} — {task.progress}%</span>
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: '14px 16px', fontSize: 11, color: th.textSecondary, whiteSpace: 'nowrap' }}>{task.start} / {task.end}</td>
-                        <td style={{ padding: '14px 16px', fontFamily: "'DM Mono', monospace", fontSize: 10, color: th.textSecondary }}>{task.duration}</td>
+                        <td style={{ padding: '14px 16px' }}>
+                          {task.status === 'DELAYED' && task.ops && (() => {
+                            const totalDelay = task.ops.reduce((sum: number, op: any) => sum + calculateAutoDelay(op), 0);
+                            return totalDelay > 0 ? (
+                              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, fontWeight: 700, color: '#E05A5A' }}>+{totalDelay.toFixed(1)}h</span>
+                            ) : null;
+                          })()}
+                        </td>
+                        <td style={{ padding: '14px 16px', fontSize: 11, color: th.textSecondary, whiteSpace: 'nowrap', fontFamily: "'Space Grotesk', sans-serif" }}>{task.start} / {task.end}</td>
+                        <td style={{ padding: '14px 16px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, color: th.textSecondary }}>{task.duration}</td>
                       </tr>
 
                       {isExpanded && hasOps && task.ops.map((op: any, oi: number) => {
                         const opProgress = op.progress || 0;
-                        const opStatus = opProgress === 100 ? 'COMPLETE' : opProgress > 0 ? 'IN PROGRESS' : 'PENDING';
-                        const os = statusMap[opStatus];
+                        const opStatus = op.status || (opProgress === 100 ? 'COMPLETE' : opProgress > 0 ? 'IN PROGRESS' : 'PENDING');
+                        const os = statusMap[opStatus] || statusMap['PENDING'];
+                        const isDelayed = opStatus === 'DELAYED';
+                        const autoDelay = calculateAutoDelay(op);
+                        const delayKey = `${task.id}-op-${oi}`;
+
                         return (
                           <tr key={`${task.id}-op-${oi}`} className="op-row"
                             style={{ borderBottom: `1px solid ${th.border}`, background: darkMode ? 'rgba(14,20,25,0.8)' : 'rgba(237,240,243,0.8)' }}>
                             <td style={{ padding: '10px 16px 10px 32px' }}></td>
                             <td style={{ padding: '10px 16px' }}>
-                              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: th.textMuted, background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 4, padding: '2px 6px' }}>
+                              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, color: th.textMuted, background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 4, padding: '2px 6px' }}>
                                 OP {op.op}
                               </span>
                             </td>
                             <td style={{ padding: '10px 16px' }}>
-                              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 600, color: th.textSecondary, paddingLeft: 12, borderLeft: `2px solid ${th.border}` }}>{op.name}</div>
+                              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, fontWeight: 500, color: th.textSecondary, paddingLeft: 12, borderLeft: `2px solid ${isDelayed ? '#E05A5A' : th.border}` }}>{op.name}</div>
                             </td>
-                            <td style={{ padding: '10px 16px', fontFamily: "'Syne', sans-serif", fontSize: 9, color: th.textMuted }}>{op.crew}</td>
+                            <td style={{ padding: '10px 16px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, color: th.textMuted }}>{op.crew}</td>
                             <td style={{ padding: '10px 16px' }}>
                               <div style={{ position: 'relative', width: 140, height: 16, borderRadius: 4, overflow: 'hidden', background: th.surface2 }}>
-                                <div style={{ position: 'absolute', inset: 0, width: `${opProgress}%`, background: os.bg, borderRadius: 4 }}></div>
+                                <div style={{ position: 'absolute', inset: 0, width: `${opProgress}%`, background: isDelayed ? 'rgba(224,90,90,0.2)' : os.bg, borderRadius: 4 }}></div>
                                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 6px', gap: 4 }}>
-                                  <div style={{ width: 4, height: 4, borderRadius: '50%', background: os.color, flexShrink: 0 }}></div>
-                                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 7, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: os.color }}>{os.label} — {opProgress}%</span>
+                                  <div style={{ width: 4, height: 4, borderRadius: '50%', background: isDelayed ? '#E05A5A' : os.color, flexShrink: 0 }}></div>
+                                  <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 7, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: isDelayed ? '#E05A5A' : os.color }}>{isDelayed ? 'Delayed' : os.label} — {opProgress}%</span>
                                 </div>
                               </div>
                             </td>
-                            <td style={{ padding: '10px 16px', fontSize: 10, color: th.textMuted, whiteSpace: 'nowrap' }}>{op.start} / {op.end}</td>
-                            <td style={{ padding: '10px 16px', fontFamily: "'DM Mono', monospace", fontSize: 9, color: th.textMuted }}>{op.duration}</td>
+                            <td style={{ padding: '10px 16px' }}>
+                              {isDelayed && autoDelay > 0 && (
+                                <div className="delay-badge"
+                                  onMouseEnter={() => setHoveredDelay(delayKey)}
+                                  onMouseLeave={() => setHoveredDelay(null)}>
+                                  <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, fontWeight: 700, color: '#E05A5A', background: 'rgba(224,90,90,0.1)', border: '1px solid rgba(224,90,90,0.2)', borderRadius: 4, padding: '2px 7px' }}>
+                                    +{autoDelay.toFixed(1)}h
+                                  </span>
+                                  {hoveredDelay === delayKey && (
+                                    <div className="delay-popup">
+                                      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, color: '#E05A5A', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>Delay Reason</div>
+                                      {op.delayReason || 'No reason provided'}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </td>
+                            <td style={{ padding: '10px 16px', fontSize: 10, color: th.textMuted, whiteSpace: 'nowrap', fontFamily: "'Space Grotesk', sans-serif" }}>{op.start} / {op.end}</td>
+                            <td style={{ padding: '10px 16px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, color: th.textMuted }}>{op.duration}</td>
                           </tr>
                         );
                       })}
@@ -306,8 +396,8 @@ export default function Dashboard() {
 
         {/* Footer */}
         <footer style={{ padding: '10px 32px', borderTop: `1px solid ${th.border}`, display: 'flex', justifyContent: 'space-between', flexShrink: 0, background: th.bg }}>
-          <span style={{ fontSize: 10, color: th.textMuted, letterSpacing: '0.1em' }}>SENTIENT V0.1 — MVP</span>
-          <span style={{ fontSize: 10, color: th.textMuted, letterSpacing: '0.1em' }}>Showing {filtered.length} of {tasks.length} WOs</span>
+          <span style={{ fontSize: 10, color: th.textMuted, letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>SENTIENT V0.1 — MVP</span>
+          <span style={{ fontSize: 10, color: th.textMuted, letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>Showing {filtered.length} of {tasks.length} WOs</span>
         </footer>
 
       </div>
