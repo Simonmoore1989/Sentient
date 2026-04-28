@@ -241,7 +241,7 @@ const [lastName, setLastName] = useState('');
               <button onClick={() => setEmailModal(null)} style={{ flex: 1, padding: '10px', background: 'transparent', border: `1px solid ${th.border}`, borderRadius: 8, color: th.textSecondary, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
                 Cancel
               </button>
-              <button onClick={sendEmail} style={{ flex: 1, padding: '10px', background: emailInput ? '#2ECC9A' : th.surface2, border: 'none', borderRadius: 8, color: emailInput ? '#040D0A' : th.textMuted, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: emailInput ? 'pointer' : 'not-allowed' }}>
+              <button onClick={() => { console.log('Send clicked', firstName, emailInput); sendEmail(); }} style={{ flex: 1, padding: '10px', background: emailInput ? '#2ECC9A' : th.surface2, border: 'none', borderRadius: 8, color: emailInput ? '#040D0A' : th.textMuted, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: emailInput ? 'pointer' : 'not-allowed' }}>
                 Send Link
               </button>
             </div>
