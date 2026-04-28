@@ -283,6 +283,7 @@ export default function Dashboard() {
                   <th style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, whiteSpace: 'nowrap' }}>Delay</th>
                   <th style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, whiteSpace: 'nowrap' }}>Start / Finish</th>
                   <th style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, whiteSpace: 'nowrap' }}>Duration</th>
+<th style={{ padding: '12px 16px', textAlign: 'left', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, whiteSpace: 'nowrap' }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -383,6 +384,48 @@ export default function Dashboard() {
                             </td>
                             <td style={{ padding: '10px 16px', fontSize: 10, color: th.textMuted, whiteSpace: 'nowrap', fontFamily: "'Space Grotesk', sans-serif" }}>{op.start} / {op.end}</td>
                             <td style={{ padding: '10px 16px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, color: th.textMuted }}>{op.duration}</td>
+<td style={{ padding: '10px 16px' }}>
+  <button
+    onClick={async (e) => {
+      e.stopPropagation();
+      try {
+        const { data: supervisors } = await supabase
+          .from('supervisors')
+          .select('*')
+          .eq('shutdown_id', task.shutdown_id)
+          .ilike('team', `%${task.team?.split(' ')[0]}%`);
+
+        if (!supervisors || supervisors.length === 0) {
+          alert('No supervisor registered for this team yet.');
+          return;
+        }
+
+        for (const supervisor of supervisors) {
+          if (!supervisor.push_token) continue;
+          await fetch('/api/notify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              subscription: JSON.parse(supervisor.push_token),
+              title: 'Sentient — Update Required',
+              body: `Out of sequence update required on Op Line ${op.op} — ${op.name}`,
+              url: `/vendor?teams=${supervisor.team}&name=${supervisor.name}&role=${supervisor.role}`
+            })
+          });
+        }
+
+        alert(`Update request sent to ${supervisors[0].name}`);
+      } catch (err) {
+        console.error('Failed to send notification:', err);
+      }
+    }}
+    style={{ padding: '4px 10px', background: 'transparent', border: `1px solid ${th.border}`, borderRadius: 5, color: th.textSecondary, fontFamily: "'Space Grotesk', sans-serif", fontSize: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s' }}
+    onMouseOver={e => { (e.target as HTMLElement).style.borderColor = '#4A9EE0'; (e.target as HTMLElement).style.color = '#4A9EE0'; }}
+    onMouseOut={e => { (e.target as HTMLElement).style.borderColor = th.border; (e.target as HTMLElement).style.color = th.textSecondary; }}
+  >
+    Field Update
+  </button>
+</td>
                           </tr>
                         );
                       })}

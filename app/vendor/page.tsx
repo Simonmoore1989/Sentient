@@ -16,6 +16,7 @@ function VendorField() {
   const [updates, setUpdates] = useState<Record<string, { progress: number; note: string; status: string; showSlider: boolean }>>({});
   const [submitted, setSubmitted] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
+  const [pushRegistered, setPushRegistered] = useState(false);
   const [filter, setFilter] = useState('ALL');
   const [delayPanel, setDelayPanel] = useState<Record<string, { reason: string; hours: number }>>({});
   const [darkMode, setDarkMode] = useState(false);
@@ -67,7 +68,38 @@ function VendorField() {
       setLoading(false);
     }
 
-    loadTasks();
+    loadTasks();registerPush();async function registerPush() {
+    if (!supervisorName || !teamsParam || pushRegistered) return;
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const existing = await reg.pushManager.getSubscription();
+      const subscription = existing || await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_KEY!
+      });
+
+      const { data: shutdownData } = await supabase
+        .from('shutdowns')
+        .select('id')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (shutdownData) {
+        await supabase.from('supervisors').upsert({
+          name: supervisorName,
+          role: supervisorRole,
+          team: teamsParam,
+          push_token: JSON.stringify(subscription),
+          shutdown_id: shutdownData.id,
+        }, { onConflict: 'name,shutdown_id' });
+      }
+
+      setPushRegistered(true);
+    } catch (err) {
+      console.log('Push registration skipped:', err);
+    }
+  }
   }, []);
 
   function getGreeting() {
