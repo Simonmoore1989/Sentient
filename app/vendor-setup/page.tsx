@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '../../lib/supabase';
 
 const vendors = [
   {
@@ -134,9 +135,28 @@ const [lastName, setLastName] = useState('');
   setEmailModal({ role, link: getCombinedLink() });
 }
 
-  function sendEmail() {
+  async function sendEmail() {
   if (!emailInput || !firstName) return;
   const link = getCombinedLink(firstName, emailModal?.role);
+
+  // Save supervisor to Supabase
+  const { data: shutdownData } = await supabase
+    .from('shutdowns')
+    .select('id')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (shutdownData) {
+    await supabase.from('supervisors').upsert({
+      name: firstName,
+      role: emailModal?.role || '',
+      team: selectedTeams.join(','),
+      push_token: null,
+      shutdown_id: shutdownData.id,
+    }, { onConflict: 'name,shutdown_id' });
+  }
+
   setSentFlash(`✓ Link sent to ${firstName} — ${emailInput}`);
   setTimeout(() => setSentFlash(null), 3000);
   setEmailModal(null);
