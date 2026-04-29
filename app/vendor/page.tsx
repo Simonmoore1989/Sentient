@@ -19,7 +19,12 @@ function VendorField() {
   const [pushRegistered, setPushRegistered] = useState(false);
   const [filter, setFilter] = useState('ALL');
   const [delayPanel, setDelayPanel] = useState<Record<string, { reason: string; hours: number }>>({});
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('darkMode') === 'true';
+    }
+    return false;
+  });
   const [showInfo, setShowInfo] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const holdTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -268,7 +273,11 @@ console.log('newStatus will be:', task.ops?.some((_: any, i: number) => updates[
                     {/* Dark/Light toggle */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 6 }} onClick={e => e.stopPropagation()}>
                       <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: th.textSecondary }}>{darkMode ? 'Dark Mode' : 'Light Mode'}</span>
-                      <div onClick={() => setDarkMode(!darkMode)} style={{ width: 40, height: 22, background: darkMode ? th.surface2 : 'rgba(46,204,154,0.15)', border: `1px solid ${darkMode ? th.border : '#2ECC9A'}`, borderRadius: 100, position: 'relative', cursor: 'pointer', transition: 'all 0.3s' }}>
+                      <div onClick={() => {
+    const next = !darkMode;
+    setDarkMode(next);
+    localStorage.setItem('darkMode', String(next));
+  }} style={{ width: 40, height: 22, background: darkMode ? th.surface2 : 'rgba(46,204,154,0.15)', border: `1px solid ${darkMode ? th.border : '#2ECC9A'}`, borderRadius: 100, position: 'relative', cursor: 'pointer', transition: 'all 0.3s' }}>
                         <div style={{ position: 'absolute', top: 2, left: darkMode ? 2 : 20, width: 16, height: 16, borderRadius: '50%', background: darkMode ? th.textMuted : '#2ECC9A', transition: 'all 0.3s' }}></div>
                       </div>
                     </div>
@@ -290,7 +299,7 @@ console.log('newStatus will be:', task.ops?.some((_: any, i: number) => updates[
           {supervisorName && (
             <div style={{ background: 'rgba(46,204,154,0.06)', border: '1px solid rgba(46,204,154,0.15)', borderRadius: 8, padding: '10px 14px' }}>
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800, color: th.textPrimary }}>
-                {getGreeting()}, {supervisorName} 👋
+                {getGreeting()}, {supervisorName}
               </div>
               {supervisorRole && (
                 <div style={{ fontSize: 9, color: '#2ECC9A', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 2 }}>{supervisorRole} Supervisor</div>
@@ -308,14 +317,15 @@ console.log('newStatus will be:', task.ops?.some((_: any, i: number) => updates[
                 <button onClick={() => setShowInfo(false)} style={{ background: 'transparent', border: 'none', color: th.textMuted, cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>×</button>
               </div>
               {[
-                { label: 'Contact List', icon: '👥' },
-                { label: 'Bus Schedule', icon: '🚌' },
-                { label: 'Flight Times', icon: '✈️' },
-                { label: 'Plant Map', icon: '🏭' },
-                { label: 'Camp Map', icon: '🗺️' },
+                { label: 'Contact List' },
+{ label: 'Training Schedule' },
+{ label: 'Bus Schedule' },
+{ label: 'Flight Times' },
+{ label: 'Plant Map' },
+{ label: 'Camp Map' },
               ].map(item => (
                 <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, cursor: 'pointer' }}>
-                  <span style={{ fontSize: 18 }}>{item.icon}</span>
+                  
                   <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: th.textSecondary }}>{item.label}</span>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={th.textMuted} strokeWidth="2" style={{ marginLeft: 'auto' }}><polyline points="9 18 15 12 9 6"/></svg>
                 </div>
