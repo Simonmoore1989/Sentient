@@ -5,11 +5,23 @@ import { supabase } from '../../lib/supabase';
 
 function VendorField() {
   const searchParams = useSearchParams();
-  const teamsParam = searchParams.get('teams') || searchParams.get('team') || '';
-  const teamIds = teamsParam.split(',').filter(Boolean);
-  const supervisorName = searchParams.get('name') || '';
-  const supervisorRole = searchParams.get('role') || '';
-  const clientParam = searchParams.get('client') || '';
+  const rawTeams = searchParams.get('teams') || searchParams.get('team') || '';
+const rawName = searchParams.get('name') || '';
+const rawRole = searchParams.get('role') || '';
+const rawClient = searchParams.get('client') || '';
+
+useEffect(() => {
+  if (rawName) localStorage.setItem('supervisor_name', rawName);
+  if (rawTeams) localStorage.setItem('supervisor_teams', rawTeams);
+  if (rawRole) localStorage.setItem('supervisor_role', rawRole);
+  if (rawClient) localStorage.setItem('supervisor_client', rawClient);
+}, [rawName, rawTeams, rawRole, rawClient]);
+
+const teamsParam = rawTeams || (typeof window !== 'undefined' ? localStorage.getItem('supervisor_teams') || '' : '');
+const teamIds = teamsParam.split(',').filter(Boolean);
+const supervisorName = rawName || (typeof window !== 'undefined' ? localStorage.getItem('supervisor_name') || '' : '');
+const supervisorRole = rawRole || (typeof window !== 'undefined' ? localStorage.getItem('supervisor_role') || '' : '');
+const clientParam = rawClient || (typeof window !== 'undefined' ? localStorage.getItem('supervisor_client') || '' : '');
 
   const [tasks, setTasks] = useState<any[]>([]);
   const [expanded, setExpanded] = useState<string[]>([]);
