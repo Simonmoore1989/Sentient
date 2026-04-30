@@ -2,7 +2,7 @@
   "name": "Sentient",
   "short_name": "Sentient",
   "description": "Shutdown Execution Intelligence",
-  "start_url": "/",
+  "start_url": "/vendor",
   "display": "standalone",
   "background_color": "#080C0F",
   "theme_color": "#2ECC9A",
