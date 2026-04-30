@@ -65,6 +65,7 @@ export default function VendorSetup() {
 const [firstName, setFirstName] = useState('');
 const [lastName, setLastName] = useState('');
   const [emailInput, setEmailInput] = useState('');
+const [barName, setBarName] = useState('');
   const [darkMode, setDarkMode] = useState(true);
 
   useEffect(() => {
@@ -128,7 +129,8 @@ const [lastName, setLastName] = useState('');
   return url;
 }
 
-  function openEmailModal(role: string) {
+  function openEmailModal(role: string, name?: string) {
+  if (name) setFirstName(name);
   setEmailInput('');
   setFirstName('');
   setLastName('');
@@ -267,15 +269,19 @@ const [lastName, setLastName] = useState('');
               Clear
             </button>
           </div>
-          <div style={{ background: th.surface2, border: '1px solid rgba(46,204,154,0.2)', borderRadius: 6, padding: '8px 12px', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#2ECC9A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {getCombinedLink()}
-          </div>
+          <input
+  type="text"
+  placeholder="Supervisor name..."
+  value={barName}
+  onChange={e => setBarName(e.target.value)}
+  style={{ background: th.surface2, border: '1px solid rgba(46,204,154,0.2)', borderRadius: 6, padding: '8px 12px', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#2ECC9A', outline: 'none', width: '100%' }}
+/>
           <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={() => openEmailModal('DS')} style={{ flex: 1, padding: '8px 16px', background: 'transparent', border: '1px solid #2ECC9A', borderRadius: 7, color: '#2ECC9A', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <button onClick={() => openEmailModal('DS', barName)} style={{ flex: 1, padding: '8px 16px', background: 'transparent', border: '1px solid #2ECC9A', borderRadius: 7, color: '#2ECC9A', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               Send to DS
             </button>
-            <button onClick={() => openEmailModal('NS')} style={{ flex: 1, padding: '8px 16px', background: '#2ECC9A', border: 'none', borderRadius: 7, color: '#040D0A', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <button onClick={() => openEmailModal('NS', barName)} style={{ flex: 1, padding: '8px 16px', background: '#2ECC9A', border: 'none', borderRadius: 7, color: '#040D0A', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               Send to NS
             </button>
