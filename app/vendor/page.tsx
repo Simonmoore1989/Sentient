@@ -65,8 +65,7 @@ const clientParam = rawClient || (typeof window !== 'undefined' ? localStorage.g
 
       const filtered = allTasks.filter((t: any) =>
         teamIds.some(id => {
-          const teamName = id.replace(/-/g, ' ').toLowerCase();
-          return t.team && t.team.toLowerCase().includes(teamName.split(' ').slice(0, 2).join(' '));
+          return t.team && t.team.toLowerCase() === id.toLowerCase();
         })
       );
 
@@ -86,7 +85,9 @@ const clientParam = rawClient || (typeof window !== 'undefined' ? localStorage.g
     }
 
     loadTasks();registerPush();async function registerPush() {
-    if (!supervisorName || !teamsParam || pushRegistered) return;
+    const name = supervisorName || localStorage.getItem('supervisor_name') || '';
+const teams = teamsParam || localStorage.getItem('supervisor_teams') || '';
+if (!name || !teams || pushRegistered) return;
     try {
       const reg = await navigator.serviceWorker.ready;
       const existing = await reg.pushManager.getSubscription();
@@ -104,9 +105,9 @@ const clientParam = rawClient || (typeof window !== 'undefined' ? localStorage.g
 
       if (shutdownData) {
         await supabase.from('supervisors').upsert({
-          name: supervisorName,
-          role: supervisorRole,
-          team: teamsParam,
+          name: name,
+role: supervisorRole || localStorage.getItem('supervisor_role') || '',
+team: teams,
           push_token: JSON.stringify(subscription),
           shutdown_id: shutdownData.id,
         }, { onConflict: 'name,shutdown_id' });
