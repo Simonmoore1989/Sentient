@@ -5,10 +5,10 @@ import { supabase } from '../../lib/supabase';
 
 function VendorField() {
   const searchParams = useSearchParams();
-  const rawTeams = searchParams.get('teams') || searchParams.get('team') || '';
+ const rawTeams = decodeURIComponent(searchParams.get('teams') || searchParams.get('team') || '');
 const rawName = searchParams.get('name') || '';
 const rawRole = searchParams.get('role') || '';
-const rawClient = searchParams.get('client') || '';
+const rawClient = decodeURIComponent(searchParams.get('client') || '');
 
 useEffect(() => {
   if (rawName) localStorage.setItem('supervisor_name', rawName);
