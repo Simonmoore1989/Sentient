@@ -97,42 +97,9 @@ function VendorField() {
 
     loadTasks();
 
-    async function registerPush() {
-      if (!supervisorName || !teamsParam || pushRegistered) return;
-      try {
-        const permission = await Notification.requestPermission();
-if (permission !== 'granted') return;
-        const reg = await navigator.serviceWorker.ready;
-        const existing = await reg.pushManager.getSubscription();
-        const subscription = existing || await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: process.env.NEXT_PUBLIC_VAPID_KEY!
-        });
-
-        const { data: shutdownData } = await supabase
-          .from('shutdowns')
-          .select('id')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (shutdownData) {
-          await supabase.from('supervisors').upsert({
-            name: supervisorName,
-            role: supervisorRole,
-            team: teamsParam,
-            push_token: JSON.stringify(subscription),
-            shutdown_id: shutdownData.id,
-          }, { onConflict: 'name,shutdown_id' });
-        }
-
-        setPushRegistered(true);
-      } catch (err) {
-        console.log('Push registration skipped:', err);
-      }
+    if (getCookie('notifications_granted')) {
+      setPushRegistered(true);
     }
-
-    registerPush();
   }, []);
 
   function getGreeting() {
@@ -241,6 +208,9 @@ if (permission !== 'granted') return;
     border: '#D8DEE5', textPrimary: '#0D1318', textSecondary: '#4A5D6B', textMuted: '#8FA0AE',
   };
 
+  const isStandalone = typeof window !== 'undefined' && (window.navigator as any).standalone;
+  const showNotifModal = isStandalone && !pushRegistered && !getCookie('notifications_granted') && !getCookie('notifications_declined');
+
   return (
     <>
       <style>{`
@@ -254,6 +224,66 @@ if (permission !== 'granted') return;
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #2ECC9A; cursor: pointer; box-shadow: 0 0 8px rgba(46,204,154,0.4); }
         input[type=range].delay-slider::-webkit-slider-thumb { background: #E05A5A; box-shadow: 0 0 8px rgba(224,90,90,0.4); }
       `}</style>
+
+      {/* Notification Permission Modal */}
+      {showNotifModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 99999, display: 'grid', placeItems: 'center' }}>
+          <div style={{ background: th.surface, border: `1px solid ${th.border}`, borderRadius: 14, padding: 24, width: '90%', maxWidth: 340, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 36, height: 36, border: '1.5px solid #4A9EE0', borderRadius: 8, display: 'grid', placeItems: 'center', background: 'rgba(74,158,224,0.1)', flexShrink: 0 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A9EE0" strokeWidth="1.5"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+              </div>
+              <div>
+                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800, color: th.textPrimary }}>Enable Notifications</div>
+                <div style={{ fontSize: 10, color: th.textSecondary, marginTop: 2 }}>Stay updated on field changes</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 11, color: th.textSecondary, lineHeight: 1.6, fontFamily: "'DM Mono', monospace" }}>
+              Sentient needs notification access to send you update requests from the shutdown manager.
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setCookie('notifications_declined', 'true', 365)}
+                style={{ flex: 1, padding: '10px', background: 'transparent', border: `1px solid ${th.border}`, borderRadius: 8, color: th.textSecondary, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                Not Now
+              </button>
+              <button
+                onClick={async () => {
+                  const permission = await Notification.requestPermission();
+                  if (permission === 'granted') {
+                    try {
+                      const reg = await navigator.serviceWorker.ready;
+                      const existing = await reg.pushManager.getSubscription();
+                      const subscription = existing || await reg.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_KEY!
+                      });
+                      const { data: shutdownData } = await supabase.from('shutdowns').select('id').order('created_at', { ascending: false }).limit(1).single();
+                      if (shutdownData) {
+                        await supabase.from('supervisors').upsert({
+                          name: supervisorName,
+                          role: supervisorRole,
+                          team: teamsParam,
+                          push_token: JSON.stringify(subscription),
+                          shutdown_id: shutdownData.id,
+                        }, { onConflict: 'name,shutdown_id' });
+                      }
+                      setPushRegistered(true);
+                      setCookie('notifications_granted', 'true', 365);
+                    } catch (err) {
+                      console.log('Push registration failed:', err);
+                    }
+                  } else {
+                    setCookie('notifications_declined', 'true', 365);
+                  }
+                }}
+                style={{ flex: 1, padding: '10px', background: '#4A9EE0', border: 'none', borderRadius: 8, color: '#fff', fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                Enable
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ minHeight: '100vh', background: th.bg, fontFamily: "'DM Mono', monospace", color: th.textPrimary, paddingBottom: 40 }} onClick={() => { setMenuOpen(false); setShowInfo(false); }}>
 
@@ -314,37 +344,6 @@ if (permission !== 'granted') return;
             </div>
           </div>
 
-          {!pushRegistered && (window.navigator as any).standalone && (
-  <div style={{ background: 'rgba(74,158,224,0.06)', border: '1px solid rgba(74,158,224,0.2)', borderRadius: 8, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, margin: '10px 16px 0' }}>
-    <div style={{ fontSize: 10, color: '#4A9EE0', fontFamily: "'Syne', sans-serif", fontWeight: 700, letterSpacing: '0.08em' }}>Enable push notifications</div>
-    <button
-      onClick={async () => {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-          const reg = await navigator.serviceWorker.ready;
-          const existing = await reg.pushManager.getSubscription();
-          const subscription = existing || await reg.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: process.env.NEXT_PUBLIC_VAPID_KEY!
-          });
-          const { data: shutdownData } = await supabase.from('shutdowns').select('id').order('created_at', { ascending: false }).limit(1).single();
-          if (shutdownData) {
-            await supabase.from('supervisors').upsert({
-              name: supervisorName,
-              role: supervisorRole,
-              team: teamsParam,
-              push_token: JSON.stringify(subscription),
-              shutdown_id: shutdownData.id,
-            }, { onConflict: 'name,shutdown_id' });
-          }
-          setPushRegistered(true);
-        }
-      }}
-      style={{ padding: '8px 14px', background: '#4A9EE0', border: 'none', borderRadius: 6, color: '#fff', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-      Enable
-    </button>
-  </div>
-)}
           {supervisorName && (
             <div style={{ background: 'rgba(46,204,154,0.06)', border: '1px solid rgba(46,204,154,0.15)', borderRadius: 8, padding: '10px 14px' }}>
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800, color: th.textPrimary }}>
