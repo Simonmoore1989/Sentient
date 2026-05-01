@@ -314,6 +314,37 @@ if (permission !== 'granted') return;
             </div>
           </div>
 
+          {!pushRegistered && (
+  <div style={{ background: 'rgba(74,158,224,0.06)', border: '1px solid rgba(74,158,224,0.2)', borderRadius: 8, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, margin: '10px 16px 0' }}>
+    <div style={{ fontSize: 10, color: '#4A9EE0', fontFamily: "'Syne', sans-serif", fontWeight: 700, letterSpacing: '0.08em' }}>Enable push notifications</div>
+    <button
+      onClick={async () => {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+          const reg = await navigator.serviceWorker.ready;
+          const existing = await reg.pushManager.getSubscription();
+          const subscription = existing || await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: process.env.NEXT_PUBLIC_VAPID_KEY!
+          });
+          const { data: shutdownData } = await supabase.from('shutdowns').select('id').order('created_at', { ascending: false }).limit(1).single();
+          if (shutdownData) {
+            await supabase.from('supervisors').upsert({
+              name: supervisorName,
+              role: supervisorRole,
+              team: teamsParam,
+              push_token: JSON.stringify(subscription),
+              shutdown_id: shutdownData.id,
+            }, { onConflict: 'name,shutdown_id' });
+          }
+          setPushRegistered(true);
+        }
+      }}
+      style={{ padding: '8px 14px', background: '#4A9EE0', border: 'none', borderRadius: 6, color: '#fff', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+      Enable
+    </button>
+  </div>
+)}
           {supervisorName && (
             <div style={{ background: 'rgba(46,204,154,0.06)', border: '1px solid rgba(46,204,154,0.15)', borderRadius: 8, padding: '10px 14px' }}>
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800, color: th.textPrimary }}>
