@@ -3,58 +3,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 
-const vendors = [
-  {
-    id: 'linkforce',
-    name: 'Linkforce',
-    totalTasks: 12,
-    teams: [
-      { id: 'linkforce-t1', name: 'Linkforce T1', tasks: 4 },
-      { id: 'linkforce-t2', name: 'Linkforce T2', tasks: 5 },
-      { id: 'linkforce-t3', name: 'Linkforce T3', tasks: 3 },
-    ],
-  },
-  {
-    id: 'dge',
-    name: 'DGE',
-    totalTasks: 8,
-    teams: [
-      { id: 'dge-t1', name: 'DGE T1', tasks: 4 },
-      { id: 'dge-t2', name: 'DGE T2', tasks: 4 },
-    ],
-  },
-  {
-    id: 'warrikal',
-    name: 'Warrikal',
-    totalTasks: 9,
-    teams: [
-      { id: 'warrikal-t1', name: 'Warrikal T1', tasks: 5 },
-      { id: 'warrikal-t2', name: 'Warrikal T2', tasks: 4 },
-    ],
-  },
-  {
-    id: 'bundara',
-    name: 'Bundara Ropes',
-    totalTasks: 6,
-    teams: [
-      { id: 'bundara-t1', name: 'Bundara Ropes T1', tasks: 6 },
-    ],
-  },
-  {
-    id: 'srg',
-    name: 'SRG Electrical',
-    totalTasks: 10,
-    teams: [
-      { id: 'srg-t1', name: 'SRG Electrical T1', tasks: 5 },
-      { id: 'srg-t2', name: 'SRG Electrical T2', tasks: 5 },
-    ],
-  },
-];
-
 export default function VendorSetup() {
   const router = useRouter();
   const [clientName, setClientName] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [vendors, setVendors] = useState<{ id: string; name: string; teams: { id: string; name: string }[] }[]>([]);
   const [expandedVendors, setExpandedVendors] = useState<string[]>([]);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [sentFlash, setSentFlash] = useState<string | null>(null);
@@ -62,16 +15,16 @@ export default function VendorSetup() {
   const [promptMode, setPromptMode] = useState<'manual' | 'automatic'>('manual');
   const [promptInterval, setPromptInterval] = useState(2);
   const [emailModal, setEmailModal] = useState<{ role: string; link: string } | null>(null);
-const [firstName, setFirstName] = useState('');
-const [lastName, setLastName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [emailInput, setEmailInput] = useState('');
-const [barName, setBarName] = useState('');
   const [darkMode, setDarkMode] = useState(true);
 
   useEffect(() => {
     setClientName(localStorage.getItem('client') || 'Client');
     const saved = localStorage.getItem('darkMode');
     if (saved !== null) setDarkMode(saved === 'true');
+    loadVendors();
   }, []);
 
   useEffect(() => {
@@ -80,6 +33,55 @@ const [barName, setBarName] = useState('');
       setNotifPermission(Notification.permission);
     }
   }, []);
+
+  async function loadVendors() {
+    const { data: shutdownData } = await supabase
+      .from('shutdowns')
+      .select('id')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (!shutdownData) return;
+
+    const { data: tasks } = await supabase
+      .from('tasks')
+      .select('team, ops')
+      .eq('shutdown_id', shutdownData.id);
+
+    if (!tasks) return;
+
+    // Collect all unique team names from tasks and ops
+    const teamSet = new Set<string>();
+    tasks.forEach((task: any) => {
+      if (task.team) teamSet.add(task.team);
+      if (task.ops) {
+        task.ops.forEach((op: any) => {
+          if (op.crew) teamSet.add(op.crew);
+        });
+      }
+    });
+
+    // Group teams by vendor (everything except the last word e.g. "T1")
+    const vendorMap: Record<string, string[]> = {};
+    teamSet.forEach(team => {
+      const parts = team.trim().split(' ');
+      const vendorName = parts.slice(0, -1).join(' ');
+      if (!vendorMap[vendorName]) vendorMap[vendorName] = [];
+      if (!vendorMap[vendorName].includes(team)) {
+        vendorMap[vendorName].push(team);
+      }
+    });
+
+    // Sort teams within each vendor
+    const vendorList = Object.entries(vendorMap).map(([vendorName, teams]) => ({
+      id: vendorName.toLowerCase().replace(/\s+/g, '-'),
+      name: vendorName,
+      teams: teams.sort().map(t => ({ id: t, name: t })),
+    }));
+
+    setVendors(vendorList);
+  }
 
   function toggleDark() {
     const next = !darkMode;
@@ -120,51 +122,50 @@ const [barName, setBarName] = useState('');
   }
 
   function getCombinedLink(name?: string, role?: string) {
-  const base = window.location.origin;
-  const client = localStorage.getItem('client') || '';
-  let url = `${base}/vendor?teams=${selectedTeams.join(',')}`;
-  if (client) url += `&client=${encodeURIComponent(client)}`;
-  if (name) url += `&name=${encodeURIComponent(name)}`;
-  if (role) url += `&role=${encodeURIComponent(role)}`;
-  return url;
-}
-
-  function openEmailModal(role: string) {
-  setEmailInput('');
-  setFirstName('');
-  setLastName('');
-  setEmailModal({ role, link: getCombinedLink() });
-}
-
-  async function sendEmail() {
-  if (!emailInput || !firstName) return;
-  const link = getCombinedLink(firstName, emailModal?.role);
-
-  // Save supervisor to Supabase
-  const { data: shutdownData } = await supabase
-    .from('shutdowns')
-    .select('id')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
-
-  if (shutdownData) {
-    await supabase.from('supervisors').upsert({
-      name: firstName,
-      role: emailModal?.role || '',
-      team: selectedTeams.join(','),
-      push_token: null,
-      shutdown_id: shutdownData.id,
-    }, { onConflict: 'name,shutdown_id' });
+    const base = window.location.origin;
+    const client = localStorage.getItem('client') || '';
+    let url = `${base}/vendor?teams=${encodeURIComponent(selectedTeams.join(','))}`;
+    if (client) url += `&client=${encodeURIComponent(client)}`;
+    if (name) url += `&name=${encodeURIComponent(name)}`;
+    if (role) url += `&role=${encodeURIComponent(role)}`;
+    return url;
   }
 
-  setSentFlash(`✓ Link sent to ${firstName} — ${emailInput}`);
-  setTimeout(() => setSentFlash(null), 3000);
-  setEmailModal(null);
-  setEmailInput('');
-  setFirstName('');
-  setLastName('');
-}
+  function openEmailModal(role: string) {
+    setEmailInput('');
+    setFirstName('');
+    setLastName('');
+    setEmailModal({ role, link: getCombinedLink() });
+  }
+
+  async function sendEmail() {
+    if (!emailInput || !firstName) return;
+    const link = getCombinedLink(firstName, emailModal?.role);
+
+    const { data: shutdownData } = await supabase
+      .from('shutdowns')
+      .select('id')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (shutdownData) {
+      await supabase.from('supervisors').upsert({
+        name: firstName,
+        role: emailModal?.role || '',
+        team: selectedTeams.join(','),
+        push_token: null,
+        shutdown_id: shutdownData.id,
+      }, { onConflict: 'name,shutdown_id' });
+    }
+
+    setSentFlash(`✓ Link sent to ${firstName} — ${emailInput}`);
+    setTimeout(() => setSentFlash(null), 3000);
+    setEmailModal(null);
+    setEmailInput('');
+    setFirstName('');
+    setLastName('');
+  }
 
   const menuItems = [
     { label: 'Overview', icon: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z', path: '/overview' },
@@ -209,47 +210,47 @@ const [barName, setBarName] = useState('');
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-  <input
-    type="text"
-    placeholder="First Name"
-    value={firstName}
-    onChange={e => setFirstName(e.target.value)}
-    autoFocus
-    style={{ flex: 1, background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: th.textPrimary, outline: 'none' }}
-  />
-  <input
-    type="text"
-    placeholder="Last Name"
-    value={lastName}
-    onChange={e => setLastName(e.target.value)}
-    style={{ flex: 1, background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: th.textPrimary, outline: 'none' }}
-  />
-</div>
-<input
-  type="email"
-  placeholder="supervisor@company.com"
-  value={emailInput}
-  onChange={e => setEmailInput(e.target.value)}
-  onKeyDown={e => e.key === 'Enter' && sendEmail()}
-  style={{ background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: th.textPrimary, outline: 'none', width: '100%' }}
-/>
-{firstName && (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-  <div style={{ flex: 1, background: th.surface2, border: `1px solid rgba(46,204,154,0.2)`, borderRadius: 6, padding: '8px 12px', fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#2ECC9A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-    {getCombinedLink(firstName, emailModal.role)}
-  </div>
-  <button
-    onClick={() => navigator.clipboard.writeText(getCombinedLink(firstName, emailModal.role))}
-    style={{ padding: '8px 12px', background: 'rgba(46,204,154,0.1)', border: '1px solid rgba(46,204,154,0.3)', borderRadius: 6, color: '#2ECC9A', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-    Copy
-  </button>
-</div>
-)}
+              <input
+                type="text"
+                placeholder="First Name"
+                value={firstName}
+                onChange={e => setFirstName(e.target.value)}
+                autoFocus
+                style={{ flex: 1, background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: th.textPrimary, outline: 'none' }}
+              />
+              <input
+                type="text"
+                placeholder="Last Name"
+                value={lastName}
+                onChange={e => setLastName(e.target.value)}
+                style={{ flex: 1, background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: th.textPrimary, outline: 'none' }}
+              />
+            </div>
+            <input
+              type="email"
+              placeholder="supervisor@company.com"
+              value={emailInput}
+              onChange={e => setEmailInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && sendEmail()}
+              style={{ background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: th.textPrimary, outline: 'none', width: '100%' }}
+            />
+            {firstName && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ flex: 1, background: th.surface2, border: `1px solid rgba(46,204,154,0.2)`, borderRadius: 6, padding: '8px 12px', fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#2ECC9A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {getCombinedLink(firstName, emailModal.role)}
+                </div>
+                <button
+                  onClick={() => navigator.clipboard.writeText(getCombinedLink(firstName, emailModal.role))}
+                  style={{ padding: '8px 12px', background: 'rgba(46,204,154,0.1)', border: '1px solid rgba(46,204,154,0.3)', borderRadius: 6, color: '#2ECC9A', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  Copy
+                </button>
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setEmailModal(null)} style={{ flex: 1, padding: '10px', background: 'transparent', border: `1px solid ${th.border}`, borderRadius: 8, color: th.textSecondary, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
                 Cancel
               </button>
-              <button onClick={() => { console.log('Send clicked', firstName, emailInput); sendEmail(); }} style={{ flex: 1, padding: '10px', background: emailInput ? '#2ECC9A' : th.surface2, border: 'none', borderRadius: 8, color: emailInput ? '#040D0A' : th.textMuted, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: emailInput ? 'pointer' : 'not-allowed' }}>
+              <button onClick={sendEmail} style={{ flex: 1, padding: '10px', background: emailInput ? '#2ECC9A' : th.surface2, border: 'none', borderRadius: 8, color: emailInput ? '#040D0A' : th.textMuted, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: emailInput ? 'pointer' : 'not-allowed' }}>
                 Send Link
               </button>
             </div>
@@ -275,13 +276,6 @@ const [barName, setBarName] = useState('');
               Clear
             </button>
           </div>
-          <input
-  type="text"
-  placeholder="Supervisor name..."
-  value={barName}
-  onChange={e => setBarName(e.target.value)}
-  style={{ background: th.surface2, border: '1px solid rgba(46,204,154,0.2)', borderRadius: 6, padding: '8px 12px', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#2ECC9A', outline: 'none', width: '100%' }}
-/>
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={() => openEmailModal('DS')} style={{ flex: 1, padding: '8px 16px', background: 'transparent', border: '1px solid #2ECC9A', borderRadius: 7, color: '#2ECC9A', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -415,44 +409,48 @@ const [barName, setBarName] = useState('');
 
           {/* Vendor list */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {vendors.map(vendor => {
-              const isExpanded = expandedVendors.includes(vendor.id);
-              return (
-                <div key={vendor.id} style={{ background: th.surface, border: `1px solid ${th.border}`, borderRadius: 10, overflow: 'hidden' }}>
-                  <div className="vendor-row" onClick={() => toggleVendor(vendor.id)} style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', borderBottom: isExpanded ? `1px solid ${th.border}` : 'none' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, letterSpacing: '0.06em', color: th.textPrimary }}>{vendor.name}</div>
-                      <span style={{ padding: '2px 10px', background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 100, fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: th.textSecondary }}>{vendor.totalTasks} Tasks</span>
-                      <span style={{ padding: '2px 10px', background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 100, fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: th.textSecondary }}>{vendor.teams.length} Team{vendor.teams.length > 1 ? 's' : ''}</span>
+            {vendors.length === 0 ? (
+              <div style={{ padding: '32px', textAlign: 'center', color: th.textMuted, fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.1em' }}>
+                No teams found — upload a schedule first
+              </div>
+            ) : (
+              vendors.map(vendor => {
+                const isExpanded = expandedVendors.includes(vendor.id);
+                return (
+                  <div key={vendor.id} style={{ background: th.surface, border: `1px solid ${th.border}`, borderRadius: 10, overflow: 'hidden' }}>
+                    <div className="vendor-row" onClick={() => toggleVendor(vendor.id)} style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', borderBottom: isExpanded ? `1px solid ${th.border}` : 'none' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, letterSpacing: '0.06em', color: th.textPrimary }}>{vendor.name}</div>
+                        <span style={{ padding: '2px 10px', background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 100, fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: th.textSecondary }}>{vendor.teams.length} Team{vendor.teams.length > 1 ? 's' : ''}</span>
+                      </div>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={th.textSecondary} strokeWidth="2" style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>
+                        <polyline points="6 9 12 15 18 9"/>
+                      </svg>
                     </div>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={th.textSecondary} strokeWidth="2" style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>
-                      <polyline points="6 9 12 15 18 9"/>
-                    </svg>
-                  </div>
 
-                  {isExpanded && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                      {vendor.teams.map((team, idx) => {
-                        const isSelected = selectedTeams.includes(team.id);
-                        return (
-                          <div key={team.id} style={{ padding: '16px 24px', borderBottom: idx < vendor.teams.length - 1 ? `1px solid ${th.border}` : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: isSelected ? 'rgba(46,204,154,0.03)' : 'transparent', transition: 'background 0.15s' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                              <div onClick={() => toggleTeam(team.id)} style={{ width: 16, height: 16, borderRadius: 4, border: `1.5px solid ${isSelected ? '#2ECC9A' : th.border}`, background: isSelected ? '#2ECC9A' : 'transparent', display: 'grid', placeItems: 'center', cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' }}>
-                                {isSelected && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#040D0A" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
-                              </div>
-                              <div>
-                                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', color: th.textPrimary }}>{team.name}</div>
-                                <div style={{ fontSize: 9, color: th.textMuted, marginTop: 1 }}>{team.tasks} tasks assigned</div>
+                    {isExpanded && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                        {vendor.teams.map((team, idx) => {
+                          const isSelected = selectedTeams.includes(team.id);
+                          return (
+                            <div key={team.id} style={{ padding: '16px 24px', borderBottom: idx < vendor.teams.length - 1 ? `1px solid ${th.border}` : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: isSelected ? 'rgba(46,204,154,0.03)' : 'transparent', transition: 'background 0.15s' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div onClick={() => toggleTeam(team.id)} style={{ width: 16, height: 16, borderRadius: 4, border: `1.5px solid ${isSelected ? '#2ECC9A' : th.border}`, background: isSelected ? '#2ECC9A' : 'transparent', display: 'grid', placeItems: 'center', cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' }}>
+                                  {isSelected && <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#040D0A" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
+                                </div>
+                                <div>
+                                  <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', color: th.textPrimary }}>{team.name}</div>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
           </div>
 
           <div style={{ background: 'rgba(46,204,154,0.04)', border: '1px solid rgba(46,204,154,0.12)', borderRadius: 8, padding: '16px 20px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
