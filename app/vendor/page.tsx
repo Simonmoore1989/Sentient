@@ -314,7 +314,7 @@ if (permission !== 'granted') return;
             </div>
           </div>
 
-          {!pushRegistered && (
+          {!pushRegistered && (window.navigator as any).standalone && (
   <div style={{ background: 'rgba(74,158,224,0.06)', border: '1px solid rgba(74,158,224,0.2)', borderRadius: 8, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, margin: '10px 16px 0' }}>
     <div style={{ fontSize: 10, color: '#4A9EE0', fontFamily: "'Syne', sans-serif", fontWeight: 700, letterSpacing: '0.08em' }}>Enable push notifications</div>
     <button
