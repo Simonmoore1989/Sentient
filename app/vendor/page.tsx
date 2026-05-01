@@ -276,6 +276,7 @@ function VendorField() {
               setCookie('notifications_granted', 'true', 365);
             } catch (err) {
               console.log('Push registration failed:', err);
+alert('Push failed: ' + (err instanceof Error ? err.message : JSON.stringify(err)));
 alert('Push failed: ' + JSON.stringify(err));
             }
           }
