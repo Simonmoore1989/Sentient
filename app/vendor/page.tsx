@@ -65,7 +65,7 @@ const clientParam = rawClient || (typeof window !== 'undefined' ? localStorage.g
 
       const filtered = allTasks.filter((t: any) =>
         teamIds.some(id => {
-          return t.team && t.team.toLowerCase() === id.toLowerCase();
+          return t.team && t.team.toLowerCase().includes(id.toLowerCase());
         })
       );
 
