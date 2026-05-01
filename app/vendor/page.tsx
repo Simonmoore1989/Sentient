@@ -100,6 +100,8 @@ function VendorField() {
     async function registerPush() {
       if (!supervisorName || !teamsParam || pushRegistered) return;
       try {
+        const permission = await Notification.requestPermission();
+if (permission !== 'granted') return;
         const reg = await navigator.serviceWorker.ready;
         const existing = await reg.pushManager.getSubscription();
         const subscription = existing || await reg.pushManager.subscribe({
