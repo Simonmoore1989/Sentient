@@ -46,11 +46,13 @@ function VendorField() {
   const [delayPanel, setDelayPanel] = useState<Record<string, { reason: string; hours: number }>>({});
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('darkMode') === 'true';
+      const saved = localStorage.getItem('darkMode');
+      return saved === null ? true : saved === 'true';
     }
-    return false;
+    return true;
   });
   const [showInfo, setShowInfo] = useState(false);
+  const [notifModalDismissed, setNotifModalDismissed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const holdTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
@@ -209,7 +211,7 @@ function VendorField() {
   };
 
   const isStandalone = typeof window !== 'undefined' && (window.navigator as any).standalone;
-  const showNotifModal = isStandalone && !pushRegistered && !getCookie('notifications_granted') && !getCookie('notifications_declined');
+  const showNotifModal = isStandalone && !pushRegistered && !notifModalDismissed && !getCookie('notifications_granted');
 
   return (
     <>
@@ -226,64 +228,53 @@ function VendorField() {
       `}</style>
 
       {/* Notification Permission Modal */}
-      {showNotifModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 99999, display: 'grid', placeItems: 'center' }}>
-          <div style={{ background: th.surface, border: `1px solid ${th.border}`, borderRadius: 14, padding: 24, width: '90%', maxWidth: 340, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 36, height: 36, border: '1.5px solid #4A9EE0', borderRadius: 8, display: 'grid', placeItems: 'center', background: 'rgba(74,158,224,0.1)', flexShrink: 0 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A9EE0" strokeWidth="1.5"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
-              </div>
-              <div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800, color: th.textPrimary }}>Enable Notifications</div>
-                <div style={{ fontSize: 10, color: th.textSecondary, marginTop: 2 }}>Stay updated on field changes</div>
-              </div>
-            </div>
-            <div style={{ fontSize: 11, color: th.textSecondary, lineHeight: 1.6, fontFamily: "'DM Mono', monospace" }}>
-              Sentient needs notification access to send you update requests from the shutdown manager.
-            </div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                onClick={() => setCookie('notifications_declined', 'true', 365)}
-                style={{ flex: 1, padding: '10px', background: 'transparent', border: `1px solid ${th.border}`, borderRadius: 8, color: th.textSecondary, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
-                Not Now
-              </button>
-              <button
-                onClick={async () => {
-                  const permission = await Notification.requestPermission();
-                  if (permission === 'granted') {
-                    try {
-                      const reg = await navigator.serviceWorker.ready;
-                      const existing = await reg.pushManager.getSubscription();
-                      const subscription = existing || await reg.pushManager.subscribe({
-                        userVisibleOnly: true,
-                        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_KEY!
-                      });
-                      const { data: shutdownData } = await supabase.from('shutdowns').select('id').order('created_at', { ascending: false }).limit(1).single();
-                      if (shutdownData) {
-                        await supabase.from('supervisors').upsert({
-                          name: supervisorName,
-                          role: supervisorRole,
-                          team: teamsParam,
-                          push_token: JSON.stringify(subscription),
-                          shutdown_id: shutdownData.id,
-                        }, { onConflict: 'name,shutdown_id' });
-                      }
-                      setPushRegistered(true);
-                      setCookie('notifications_granted', 'true', 365);
-                    } catch (err) {
-                      console.log('Push registration failed:', err);
-                    }
-                  } else {
-                    setCookie('notifications_declined', 'true', 365);
-                  }
-                }}
-                style={{ flex: 1, padding: '10px', background: '#4A9EE0', border: 'none', borderRadius: 8, color: '#fff', fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
-                Enable
-              </button>
-            </div>
-          </div>
+{showNotifModal && (
+  <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 99999, display: 'grid', placeItems: 'center' }}>
+    <div style={{ background: th.surface, border: `1px solid ${th.border}`, borderRadius: 14, padding: 24, width: '90%', maxWidth: 340, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 36, height: 36, border: '1.5px solid #4A9EE0', borderRadius: 8, display: 'grid', placeItems: 'center', background: 'rgba(74,158,224,0.1)', flexShrink: 0 }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A9EE0" strokeWidth="1.5"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
         </div>
-      )}
+        <div>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800, color: th.textPrimary }}>Enable Notifications</div>
+          <div style={{ fontSize: 10, color: th.textSecondary, marginTop: 2 }}>Stay updated on field changes</div>
+        </div>
+      </div>
+      <button
+        onClick={async () => {
+          const permission = await Notification.requestPermission();
+          if (permission === 'granted') {
+            try {
+              const reg = await navigator.serviceWorker.ready;
+              const existing = await reg.pushManager.getSubscription();
+              const subscription = existing || await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: process.env.NEXT_PUBLIC_VAPID_KEY!
+              });
+              const { data: shutdownData } = await supabase.from('shutdowns').select('id').order('created_at', { ascending: false }).limit(1).single();
+              if (shutdownData) {
+                await supabase.from('supervisors').upsert({
+                  name: supervisorName,
+                  role: supervisorRole,
+                  team: teamsParam,
+                  push_token: JSON.stringify(subscription),
+                  shutdown_id: shutdownData.id,
+                }, { onConflict: 'name,shutdown_id' });
+              }
+              setPushRegistered(true);
+              setCookie('notifications_granted', 'true', 365);
+            } catch (err) {
+              console.log('Push registration failed:', err);
+            }
+          }
+          setNotifModalDismissed(true);
+        }}
+        style={{ width: '100%', padding: '12px', background: '#4A9EE0', border: 'none', borderRadius: 8, color: '#fff', fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
+        Enable
+      </button>
+    </div>
+  </div>
+)}
 
       <div style={{ minHeight: '100vh', background: th.bg, fontFamily: "'DM Mono', monospace", color: th.textPrimary, paddingBottom: 40 }} onClick={() => { setMenuOpen(false); setShowInfo(false); }}>
 
