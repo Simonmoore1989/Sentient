@@ -3,25 +3,38 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 
+function setCookie(name: string, value: string, days = 365) {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+}
+
+function getCookie(name: string): string {
+  return document.cookie.split('; ').reduce((r, v) => {
+    const parts = v.split('=');
+    return parts[0] === name ? decodeURIComponent(parts[1]) : r;
+  }, '');
+}
+
 function VendorField() {
   const searchParams = useSearchParams();
- const rawTeams = decodeURIComponent(searchParams.get('teams') || searchParams.get('team') || '');
-const rawName = searchParams.get('name') || '';
-const rawRole = searchParams.get('role') || '';
-const rawClient = decodeURIComponent(searchParams.get('client') || '');
 
-useEffect(() => {
-  if (rawName) localStorage.setItem('supervisor_name', rawName);
-  if (rawTeams) localStorage.setItem('supervisor_teams', rawTeams);
-  if (rawRole) localStorage.setItem('supervisor_role', rawRole);
-  if (rawClient) localStorage.setItem('supervisor_client', rawClient);
-}, [rawName, rawTeams, rawRole, rawClient]);
+  const rawTeams = decodeURIComponent(searchParams.get('teams') || searchParams.get('team') || '');
+  const rawName = searchParams.get('name') || '';
+  const rawRole = searchParams.get('role') || '';
+  const rawClient = decodeURIComponent(searchParams.get('client') || '');
 
-const teamsParam = rawTeams || (typeof window !== 'undefined' ? localStorage.getItem('supervisor_teams') || '' : '');
-const teamIds = teamsParam.split(',').filter(Boolean);
-const supervisorName = rawName || (typeof window !== 'undefined' ? localStorage.getItem('supervisor_name') || '' : '');
-const supervisorRole = rawRole || (typeof window !== 'undefined' ? localStorage.getItem('supervisor_role') || '' : '');
-const clientParam = rawClient || (typeof window !== 'undefined' ? localStorage.getItem('supervisor_client') || '' : '');
+  useEffect(() => {
+    if (rawName) setCookie('supervisor_name', rawName);
+    if (rawTeams) setCookie('supervisor_teams', rawTeams);
+    if (rawRole) setCookie('supervisor_role', rawRole);
+    if (rawClient) setCookie('supervisor_client', rawClient);
+  }, [rawName, rawTeams, rawRole, rawClient]);
+
+  const teamsParam = rawTeams || getCookie('supervisor_teams');
+  const teamIds = teamsParam.split(',').filter(Boolean);
+  const supervisorName = rawName || getCookie('supervisor_name');
+  const supervisorRole = rawRole || getCookie('supervisor_role');
+  const clientParam = rawClient || getCookie('supervisor_client');
 
   const [tasks, setTasks] = useState<any[]>([]);
   const [expanded, setExpanded] = useState<string[]>([]);
@@ -64,9 +77,7 @@ const clientParam = rawClient || (typeof window !== 'undefined' ? localStorage.g
       }
 
       const filtered = allTasks.filter((t: any) =>
-        teamIds.some(id => {
-          return t.team && t.team.toLowerCase().includes(id.toLowerCase());
-        })
+        teamIds.some(id => t.team && t.team.toLowerCase() === id.toLowerCase())
       );
 
       setTasks(filtered);
@@ -84,40 +95,42 @@ const clientParam = rawClient || (typeof window !== 'undefined' ? localStorage.g
       setLoading(false);
     }
 
-    loadTasks();registerPush();async function registerPush() {
-    const name = supervisorName || localStorage.getItem('supervisor_name') || '';
-const teams = teamsParam || localStorage.getItem('supervisor_teams') || '';
-if (!name || !teams || pushRegistered) return;
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      const existing = await reg.pushManager.getSubscription();
-      const subscription = existing || await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_KEY!
-      });
+    loadTasks();
 
-      const { data: shutdownData } = await supabase
-        .from('shutdowns')
-        .select('id')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+    async function registerPush() {
+      if (!supervisorName || !teamsParam || pushRegistered) return;
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const existing = await reg.pushManager.getSubscription();
+        const subscription = existing || await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: process.env.NEXT_PUBLIC_VAPID_KEY!
+        });
 
-      if (shutdownData) {
-        await supabase.from('supervisors').upsert({
-          name: name,
-role: supervisorRole || localStorage.getItem('supervisor_role') || '',
-team: teams,
-          push_token: JSON.stringify(subscription),
-          shutdown_id: shutdownData.id,
-        }, { onConflict: 'name,shutdown_id' });
+        const { data: shutdownData } = await supabase
+          .from('shutdowns')
+          .select('id')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (shutdownData) {
+          await supabase.from('supervisors').upsert({
+            name: supervisorName,
+            role: supervisorRole,
+            team: teamsParam,
+            push_token: JSON.stringify(subscription),
+            shutdown_id: shutdownData.id,
+          }, { onConflict: 'name,shutdown_id' });
+        }
+
+        setPushRegistered(true);
+      } catch (err) {
+        console.log('Push registration skipped:', err);
       }
-
-      setPushRegistered(true);
-    } catch (err) {
-      console.log('Push registration skipped:', err);
     }
-  }
+
+    registerPush();
   }, []);
 
   function getGreeting() {
@@ -168,16 +181,10 @@ team: teams,
   }
 
   async function submitWO(taskId: string) {
-    console.log('submitWO called for', taskId);
     const update = updates[taskId];
     const task = tasks.find(t => t.id === taskId);
-    console.log('task found:', task?.id, 'update:', update);
-    console.log('op updates:', task.ops?.map((_: any, i: number) => ({ key: `${taskId}-op-${i}`, update: updates[`${taskId}-op-${i}`] })));
-    console.log('anyOpDelayed:', task.ops?.some((_: any, i: number) => updates[`${taskId}-op-${i}`]?.status === 'DELAYED'));
-console.log('newStatus will be:', task.ops?.some((_: any, i: number) => updates[`${taskId}-op-${i}`]?.status === 'DELAYED') ? 'DELAYED' : 'other');
     if (!task) return;
 
-    // Calculate overall progress from op lines if they exist
     let newProgress = update.progress;
     let updatedOps = task.ops || [];
 
@@ -270,7 +277,6 @@ console.log('newStatus will be:', task.ops?.some((_: any, i: number) => updates[
                 <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, color: th.textPrimary }}>{timeStr}</div>
                 <div style={{ fontSize: 9, color: th.textMuted }}>{dateStr}</div>
               </div>
-              {/* Menu button */}
               <div style={{ position: 'relative' }}>
                 <button
                   onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
@@ -283,19 +289,17 @@ console.log('newStatus will be:', task.ops?.some((_: any, i: number) => updates[
                 </button>
                 {menuOpen && (
                   <div onClick={e => e.stopPropagation()} style={{ position: 'fixed', top: 70, right: 16, background: th.surface, border: `1px solid ${th.border}`, borderRadius: 10, padding: 8, minWidth: 200, zIndex: 99999, boxShadow: '0 16px 48px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {/* Dark/Light toggle */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 6 }} onClick={e => e.stopPropagation()}>
                       <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: th.textSecondary }}>{darkMode ? 'Dark Mode' : 'Light Mode'}</span>
                       <div onClick={() => {
-    const next = !darkMode;
-    setDarkMode(next);
-    localStorage.setItem('darkMode', String(next));
-  }} style={{ width: 40, height: 22, background: darkMode ? th.surface2 : 'rgba(46,204,154,0.15)', border: `1px solid ${darkMode ? th.border : '#2ECC9A'}`, borderRadius: 100, position: 'relative', cursor: 'pointer', transition: 'all 0.3s' }}>
+                        const next = !darkMode;
+                        setDarkMode(next);
+                        localStorage.setItem('darkMode', String(next));
+                      }} style={{ width: 40, height: 22, background: darkMode ? th.surface2 : 'rgba(46,204,154,0.15)', border: `1px solid ${darkMode ? th.border : '#2ECC9A'}`, borderRadius: 100, position: 'relative', cursor: 'pointer', transition: 'all 0.3s' }}>
                         <div style={{ position: 'absolute', top: 2, left: darkMode ? 2 : 20, width: 16, height: 16, borderRadius: '50%', background: darkMode ? th.textMuted : '#2ECC9A', transition: 'all 0.3s' }}></div>
                       </div>
                     </div>
                     <div style={{ height: 1, background: th.border }}></div>
-                    {/* Shutdown Info */}
                     <div
                       onClick={() => { setShowInfo(true); setMenuOpen(false); }}
                       style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 6, cursor: 'pointer', fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: th.textSecondary }}>
@@ -308,7 +312,6 @@ console.log('newStatus will be:', task.ops?.some((_: any, i: number) => updates[
             </div>
           </div>
 
-          {/* Welcome */}
           {supervisorName && (
             <div style={{ background: 'rgba(46,204,154,0.06)', border: '1px solid rgba(46,204,154,0.15)', borderRadius: 8, padding: '10px 14px' }}>
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800, color: th.textPrimary }}>
@@ -321,7 +324,6 @@ console.log('newStatus will be:', task.ops?.some((_: any, i: number) => updates[
           )}
         </div>
 
-        {/* Shutdown Info Modal */}
         {showInfo && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 99999, display: 'grid', placeItems: 'center' }} onClick={() => setShowInfo(false)}>
             <div onClick={e => e.stopPropagation()} style={{ background: th.surface, border: `1px solid ${th.border}`, borderRadius: 14, padding: 24, width: '90%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -329,17 +331,9 @@ console.log('newStatus will be:', task.ops?.some((_: any, i: number) => updates[
                 <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, color: th.textPrimary }}>Shutdown Info</div>
                 <button onClick={() => setShowInfo(false)} style={{ background: 'transparent', border: 'none', color: th.textMuted, cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>×</button>
               </div>
-              {[
-                { label: 'Contact List' },
-{ label: 'Training Schedule' },
-{ label: 'Bus Schedule' },
-{ label: 'Flight Times' },
-{ label: 'Plant Map' },
-{ label: 'Camp Map' },
-              ].map(item => (
-                <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, cursor: 'pointer' }}>
-                  
-                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: th.textSecondary }}>{item.label}</span>
+              {['Contact List', 'Training Schedule', 'Bus Schedule', 'Flight Times', 'Plant Map', 'Camp Map'].map(item => (
+                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, cursor: 'pointer' }}>
+                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: th.textSecondary }}>{item}</span>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={th.textMuted} strokeWidth="2" style={{ marginLeft: 'auto' }}><polyline points="9 18 15 12 9 6"/></svg>
                 </div>
               ))}
@@ -348,7 +342,6 @@ console.log('newStatus will be:', task.ops?.some((_: any, i: number) => updates[
           </div>
         )}
 
-        {/* Filter bar */}
         <div style={{ padding: '10px 16px', display: 'flex', gap: 8, borderBottom: `1px solid ${th.border}`, background: th.surface }}>
           {[
             { label: 'All', value: 'ALL' },
@@ -365,9 +358,7 @@ console.log('newStatus will be:', task.ops?.some((_: any, i: number) => updates[
           ))}
         </div>
 
-        {/* Content */}
         <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-
           {loading ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: th.textMuted, fontSize: 11 }}>Loading tasks...</div>
           ) : tasks.length === 0 ? (
@@ -384,20 +375,17 @@ console.log('newStatus will be:', task.ops?.some((_: any, i: number) => updates[
                 const isExpanded = expanded.includes(woKey);
                 const isSubmitted = submitted[woKey];
                 const hasOps = task.ops && task.ops.length > 0;
-const progress = hasOps
-  ? Math.round(task.ops.reduce((sum: number, _op: any, i: number) => {
-      const opKey = `${task.id}-op-${i}`;
-      const opUpdate = updates[opKey];
-      return sum + (opUpdate ? opUpdate.progress : (_op.progress || 0));
-    }, 0) / task.ops.length)
-  : woUpdate.progress;
+                const progress = hasOps
+                  ? Math.round(task.ops.reduce((sum: number, _op: any, i: number) => {
+                      const opKey = `${task.id}-op-${i}`;
+                      const opUpdate = updates[opKey];
+                      return sum + (opUpdate ? opUpdate.progress : (_op.progress || 0));
+                    }, 0) / task.ops.length)
+                  : woUpdate.progress;
                 const progressColor = woUpdate.status === 'DELAYED' ? '#E05A5A' : progress === 100 ? '#2ECC9A' : progress > 0 ? '#4A9EE0' : th.textMuted;
-                
 
                 return (
                   <div key={task.id} style={{ background: th.surface, border: `1px solid ${isSubmitted ? '#2ECC9A' : th.border}`, borderRadius: 12, overflow: 'hidden', animation: 'fadeIn 0.3s ease', transition: 'border-color 0.3s' }}>
-
-                    {/* WO Header */}
                     <div onClick={() => toggleExpand(woKey)} style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 12 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -421,11 +409,8 @@ const progress = hasOps
                       </div>
                     </div>
 
-                    {/* Expanded content */}
                     {isExpanded && (
                       <div style={{ borderTop: `1px solid ${th.border}` }}>
-
-                        {/* Op Lines */}
                         {hasOps && (
                           <div style={{ borderBottom: `1px solid ${th.border}` }}>
                             {task.ops.map((op: any, oi: number) => {
@@ -436,8 +421,6 @@ const progress = hasOps
 
                               return (
                                 <div key={opKey} style={{ padding: '12px 16px', borderBottom: oi < task.ops.length - 1 ? `1px solid ${th.surface2}` : 'none' }}>
-
-                                  {/* Op header */}
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
@@ -451,7 +434,6 @@ const progress = hasOps
                                     <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, color: opColor, marginLeft: 12 }}>{opProgress}%</span>
                                   </div>
 
-                                  {/* Manual slider */}
                                   {opUpdate.showSlider && (
                                     <div style={{ marginBottom: 12, padding: '10px 12px', background: th.surface2, borderRadius: 8, border: `1px solid ${th.border}` }}>
                                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -475,7 +457,6 @@ const progress = hasOps
                                     </div>
                                   )}
 
-                                  {/* Status buttons */}
                                   <div style={{ display: 'flex', gap: 6 }}>
                                     <button
                                       onTouchStart={() => handleOnTrackPress(opKey, op.start, op.end)}
@@ -500,7 +481,6 @@ const progress = hasOps
                                     </button>
                                   </div>
 
-                                  {/* Delay panel */}
                                   {opUpdate.status === 'DELAYED' && delayPanel[opKey] !== undefined && (
                                     <div style={{ marginTop: 10, padding: '12px', background: 'rgba(224,90,90,0.06)', border: '1px solid rgba(224,90,90,0.2)', borderRadius: 8 }}>
                                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -538,14 +518,12 @@ const progress = hasOps
                                       </div>
                                     </div>
                                   )}
-
                                 </div>
                               );
                             })}
                           </div>
                         )}
 
-                        {/* Submit */}
                         <div style={{ padding: '12px 16px' }}>
                           <button
                             onClick={() => submitWO(woKey)}
@@ -553,10 +531,8 @@ const progress = hasOps
                             {isSubmitted ? '✓ Update Submitted' : 'Submit Update'}
                           </button>
                         </div>
-
                       </div>
                     )}
-
                   </div>
                 );
               })
