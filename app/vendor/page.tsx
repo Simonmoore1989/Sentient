@@ -242,6 +242,7 @@ function VendorField() {
       </div>
       <button
         onClick={async () => {
+          setNotifModalDismissed(true);
           const permission = await Notification.requestPermission();
           if (permission === 'granted') {
             try {
