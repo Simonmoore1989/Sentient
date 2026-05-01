@@ -129,8 +129,7 @@ const [barName, setBarName] = useState('');
   return url;
 }
 
-  function openEmailModal(role: string, name?: string) {
-  if (name) setFirstName(name);
+  function openEmailModal(role: string) {
   setEmailInput('');
   setFirstName('');
   setLastName('');
@@ -284,11 +283,11 @@ const [barName, setBarName] = useState('');
   style={{ background: th.surface2, border: '1px solid rgba(46,204,154,0.2)', borderRadius: 6, padding: '8px 12px', fontFamily: "'DM Mono', monospace", fontSize: 10, color: '#2ECC9A', outline: 'none', width: '100%' }}
 />
           <div style={{ display: 'flex', gap: 10 }}>
-            <button onClick={() => openEmailModal('DS', barName)} style={{ flex: 1, padding: '8px 16px', background: 'transparent', border: '1px solid #2ECC9A', borderRadius: 7, color: '#2ECC9A', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <button onClick={() => openEmailModal('DS')} style={{ flex: 1, padding: '8px 16px', background: 'transparent', border: '1px solid #2ECC9A', borderRadius: 7, color: '#2ECC9A', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               Send to DS
             </button>
-            <button onClick={() => openEmailModal('NS', barName)} style={{ flex: 1, padding: '8px 16px', background: '#2ECC9A', border: 'none', borderRadius: 7, color: '#040D0A', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <button onClick={() => openEmailModal('NS')} style={{ flex: 1, padding: '8px 16px', background: '#2ECC9A', border: 'none', borderRadius: 7, color: '#040D0A', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               Send to NS
             </button>
