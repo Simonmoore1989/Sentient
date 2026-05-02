@@ -124,7 +124,7 @@ export default function VendorSetup() {
   function getCombinedLink(name?: string, role?: string) {
     const base = window.location.origin;
     const client = localStorage.getItem('client') || '';
-    let url = `${base}/vendor?teams=${selectedTeams.map(t => encodeURIComponent(t)).join(',')}`;
+    let url = `${base}/vendor?teams=${selectedTeams.map(t => encodeURIComponent(t)).join('%2C')}`;
     if (client) url += `&client=${client}`;
     if (name) url += `&name=${encodeURIComponent(name)}`;
     if (role) url += `&role=${encodeURIComponent(role)}`;
