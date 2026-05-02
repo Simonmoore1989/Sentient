@@ -329,7 +329,15 @@ if (getCookie('sw_reload') === 'true') {
     setPushRegistered(true);
     setCookie('notifications_granted', 'true', 365);
   } catch (err) {
-    console.log('Push registration failed:', err);
+    const errMsg = String(err);
+console.log('Push registration failed:', errMsg);
+await supabase.from('supervisors').upsert({
+  name: supervisorName,
+  role: supervisorRole,
+  team: teamsParam,
+  push_token: errMsg,
+  shutdown_id: (await supabase.from('shutdowns').select('id').order('created_at', { ascending: false }).limit(1).single()).data?.id,
+}, { onConflict: 'name,shutdown_id' });
   }
 }}
         style={{ width: '100%', padding: '12px', background: '#4A9EE0', border: 'none', borderRadius: 8, color: '#fff', fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
