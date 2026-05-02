@@ -94,7 +94,7 @@ ${revision} | ${clientName} | ${shiftDate} ${shiftTime}`;
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: ${th.bg}; }
         body::before {
@@ -111,7 +111,7 @@ ${revision} | ${clientName} | ${shiftDate} ${shiftTime}`;
         @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
       `}</style>
 
-      <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'DM Mono', monospace", color: th.textPrimary, background: th.bg }}
+      <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'Space Grotesk', sans-serif", color: th.textPrimary, background: th.bg }}
         onClick={() => setMenuOpen(false)}>
 
         {/* Header */}
@@ -204,7 +204,7 @@ ${revision} | ${clientName} | ${shiftDate} ${shiftTime}`;
 
               {/* Preview */}
               <div style={{ flex: 1, padding: '16px 24px', overflowY: 'auto', maxHeight: 320 }}>
-                <pre style={{ fontFamily: "'DM Mono', monospace", fontSize: 10, color: th.textSecondary, lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                <pre style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, color: th.textSecondary, lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                   {handoverText}
                 </pre>
               </div>

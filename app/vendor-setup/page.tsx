@@ -176,7 +176,7 @@ export default function VendorSetup() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: ${th.bg}; }
         body::before {
@@ -216,14 +216,14 @@ export default function VendorSetup() {
                 value={firstName}
                 onChange={e => setFirstName(e.target.value)}
                 autoFocus
-                style={{ flex: 1, background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: th.textPrimary, outline: 'none' }}
+                style={{ flex: 1, background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, color: th.textPrimary, outline: 'none' }}
               />
               <input
                 type="text"
                 placeholder="Last Name"
                 value={lastName}
                 onChange={e => setLastName(e.target.value)}
-                style={{ flex: 1, background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: th.textPrimary, outline: 'none' }}
+                style={{ flex: 1, background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, color: th.textPrimary, outline: 'none' }}
               />
             </div>
             <input
@@ -232,11 +232,11 @@ export default function VendorSetup() {
               value={emailInput}
               onChange={e => setEmailInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && sendEmail()}
-              style={{ background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: th.textPrimary, outline: 'none', width: '100%' }}
+              style={{ background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, color: th.textPrimary, outline: 'none', width: '100%' }}
             />
             {firstName && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ flex: 1, background: th.surface2, border: `1px solid rgba(46,204,154,0.2)`, borderRadius: 6, padding: '8px 12px', fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#2ECC9A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ flex: 1, background: th.surface2, border: `1px solid rgba(46,204,154,0.2)`, borderRadius: 6, padding: '8px 12px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, color: '#2ECC9A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {getCombinedLink(firstName, emailModal.role)}
                 </div>
                 <button
@@ -290,7 +290,7 @@ export default function VendorSetup() {
       )}
 
       <div
-        style={{ position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'DM Mono', monospace", color: th.textPrimary, background: th.bg, paddingBottom: selectedTeams.length > 0 ? 160 : 0 }}
+        style={{ position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'Space Grotesk', sans-serif", color: th.textPrimary, background: th.bg, paddingBottom: selectedTeams.length > 0 ? 160 : 0 }}
         onClick={() => setMenuOpen(false)}
       >
         {/* Header */}
