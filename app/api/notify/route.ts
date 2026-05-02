@@ -1,23 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
 
+webpush.setVapidDetails(
+  process.env.VAPID_EMAIL!,
+  process.env.NEXT_PUBLIC_VAPID_KEY!,
+  process.env.VAPID_PRIVATE_KEY!
+);
+
 export async function POST(req: NextRequest) {
   try {
-    // Initialise inside the handler — runs at request time, not build time
-    webpush.setVapidDetails(
-      `mailto:${process.env.VAPID_EMAIL}`,
-      process.env.NEXT_PUBLIC_VAPID_KEY!,
-      process.env.VAPID_PRIVATE_KEY!
-    );
-
     const { subscription, title, body } = await req.json();
 
     if (!subscription) {
       return NextResponse.json({ error: 'No subscription provided' }, { status: 400 });
     }
 
+    const pushSubscription = {
+      endpoint: subscription.endpoint,
+      keys: {
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+      }
+    };
+
     await webpush.sendNotification(
-      subscription,
+      pushSubscription,
       JSON.stringify({ title, body })
     );
 
