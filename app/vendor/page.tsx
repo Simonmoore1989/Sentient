@@ -31,7 +31,8 @@ function getCookie(name: string): string {
 function VendorField() {
   const searchParams = useSearchParams();
 
-  const rawTeams = decodeURIComponent(searchParams.get('teams') || searchParams.get('team') || '');
+  const rawTeamsParam = searchParams.get('teams') || searchParams.get('team') || '';
+const rawTeams = rawTeamsParam.split('%2C').map(t => decodeURIComponent(t)).join(',');
   const rawName = searchParams.get('name') || '';
   const rawRole = searchParams.get('role') || '';
   const rawClient = decodeURIComponent(searchParams.get('client') || '');
