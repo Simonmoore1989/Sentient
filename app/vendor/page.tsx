@@ -290,50 +290,48 @@ if (getCookie('sw_reload') === 'true') {
       </div>
       <button
         onClick={async () => {
-          setNotifModalDismissed(true);
-          try {
-            const permission = await Notification.requestPermission();
-            if (permission !== 'granted') return;
+  setNotifModalDismissed(true);
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
 
-            const reg = await navigator.serviceWorker.register('/sw.js');
-            await navigator.serviceWorker.ready;
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    
+    // Wait up to 10 seconds for service worker to be ready
+    const sw = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 10000))
+    ]) as ServiceWorkerRegistration;
 
-            // If service worker is not yet controlling the page, reload once
-            if (!navigator.serviceWorker.controller) {
-              setCookie('sw_reload', 'true', 1);
-              window.location.reload();
-              return;
-            }
+    const existing = await sw.pushManager.getSubscription();
+    const subscription = existing || await sw.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_KEY!)
+    });
 
-            const existing = await reg.pushManager.getSubscription();
-            const subscription = existing || await reg.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_KEY!)
-            });
+    const { data: shutdownData } = await supabase
+      .from('shutdowns')
+      .select('id')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
 
-            const { data: shutdownData } = await supabase
-              .from('shutdowns')
-              .select('id')
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .single();
+    if (shutdownData) {
+      await supabase.from('supervisors').upsert({
+        name: supervisorName,
+        role: supervisorRole,
+        team: teamsParam,
+        push_token: JSON.stringify(subscription),
+        shutdown_id: shutdownData.id,
+      }, { onConflict: 'name,shutdown_id' });
+    }
 
-            if (shutdownData) {
-              await supabase.from('supervisors').upsert({
-                name: supervisorName,
-                role: supervisorRole,
-                team: teamsParam,
-                push_token: JSON.stringify(subscription),
-                shutdown_id: shutdownData.id,
-              }, { onConflict: 'name,shutdown_id' });
-            }
-
-            setPushRegistered(true);
-            setCookie('notifications_granted', 'true', 365);
-          } catch (err) {
-            console.log('Push registration failed:', err);
-          }
-        }}
+    setPushRegistered(true);
+    setCookie('notifications_granted', 'true', 365);
+  } catch (err) {
+    console.log('Push registration failed:', err);
+  }
+}}
         style={{ width: '100%', padding: '12px', background: '#4A9EE0', border: 'none', borderRadius: 8, color: '#fff', fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
         Enable
       </button>
