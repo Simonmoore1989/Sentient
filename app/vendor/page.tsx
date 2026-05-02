@@ -118,8 +118,8 @@ if (getCookie('notifications_granted')) {
 }
 
 // Complete push registration after SW reload
-if (sessionStorage.getItem('sw_reload') === 'true') {
-  sessionStorage.removeItem('sw_reload');
+if (getCookie('sw_reload') === 'true') {
+  setCookie('sw_reload', '', -1);
   (async () => {
     try {
       const reg = await navigator.serviceWorker.ready;
@@ -300,7 +300,7 @@ if (sessionStorage.getItem('sw_reload') === 'true') {
 
             // If service worker is not yet controlling the page, reload once
             if (!navigator.serviceWorker.controller) {
-              sessionStorage.setItem('sw_reload', 'true');
+              setCookie('sw_reload', 'true', 1);
               window.location.reload();
               return;
             }
