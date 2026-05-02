@@ -268,11 +268,11 @@ if (getCookie('sw_reload') === 'true') {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: ${th.bg}; }
         @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-        textarea::placeholder { color: ${th.textMuted}; font-family: 'DM Mono', monospace; font-size: 11px; }
+        textarea::placeholder { color: ${th.textMuted}; font-family: 'Space Grotesk', sans-serif; font-size: 11px; }
         textarea { resize: none; }
         input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: ${th.border}; outline: none; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #2ECC9A; cursor: pointer; box-shadow: 0 0 8px rgba(46,204,154,0.4); }
@@ -343,7 +343,7 @@ if (getCookie('sw_reload') === 'true') {
   </div>
 )}
 
-      <div style={{ minHeight: '100vh', background: th.bg, fontFamily: "'DM Mono', monospace", color: th.textPrimary, paddingBottom: 40 }} onClick={() => { setMenuOpen(false); setShowInfo(false); }}>
+      <div style={{ minHeight: '100vh', background: th.bg, fontFamily: "'Space Grotesk', sans-serif", color: th.textPrimary, paddingBottom: 40 }} onClick={() => { setMenuOpen(false); setShowInfo(false); }}>
 
         {/* Header */}
         <div style={{ background: th.surface, borderBottom: `1px solid ${th.border}`, padding: '14px 16px', position: 'sticky', top: 0, zIndex: 10 }}>
@@ -479,7 +479,7 @@ if (getCookie('sw_reload') === 'true') {
                     <div onClick={() => toggleExpand(woKey)} style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 12 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                          <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: '#2ECC9A', background: 'rgba(46,204,154,0.1)', border: '1px solid rgba(46,204,154,0.2)', borderRadius: 4, padding: '2px 6px', whiteSpace: 'nowrap' }}>{task.wo}</span>
+                          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, color: '#2ECC9A', background: 'rgba(46,204,154,0.1)', border: '1px solid rgba(46,204,154,0.2)', borderRadius: 4, padding: '2px 6px', whiteSpace: 'nowrap' }}>{task.wo}</span>
                           <span style={{ fontSize: 9, color: th.textMuted, whiteSpace: 'nowrap' }}>{task.team}</span>
                         </div>
                         <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800, color: th.textPrimary, lineHeight: 1.3 }}>{task.name}</div>
@@ -514,12 +514,12 @@ if (getCookie('sw_reload') === 'true') {
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                                        <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 9, color: th.textMuted, background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 4, padding: '2px 6px', whiteSpace: 'nowrap' }}>OP {op.op}</span>
+                                        <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, color: th.textMuted, background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 4, padding: '2px 6px', whiteSpace: 'nowrap' }}>OP {op.op}</span>
                                         {op.crew && op.crew !== task.team && (
                                           <span style={{ fontSize: 9, color: th.textMuted }}>{op.crew}</span>
                                         )}
                                       </div>
-                                      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 600, color: th.textSecondary }}>{op.name}</div>
+                                      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 300, color: th.textSecondary }}>{op.name}</div>
                                     </div>
                                     <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, color: opColor, marginLeft: 12 }}>{opProgress}%</span>
                                   </div>
@@ -589,7 +589,7 @@ if (getCookie('sw_reload') === 'true') {
                                         placeholder="Reason for delay..."
                                         value={delayPanel[opKey]?.reason || ''}
                                         onChange={e => setDelayPanel(prev => ({ ...prev, [opKey]: { ...prev[opKey], reason: e.target.value } }))}
-                                        style={{ width: '100%', background: th.surface2, border: '1px solid rgba(224,90,90,0.2)', borderRadius: 6, padding: '8px 10px', fontFamily: "'DM Mono', monospace", fontSize: 11, color: th.textPrimary, outline: 'none', lineHeight: 1.5, marginBottom: 12, resize: 'none' }}
+                                        style={{ width: '100%', background: th.surface2, border: '1px solid rgba(224,90,90,0.2)', borderRadius: 6, padding: '8px 10px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, color: th.textPrimary, outline: 'none', lineHeight: 1.5, marginBottom: 12, resize: 'none' }}
                                       />
                                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                                         <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: th.textSecondary }}>Delay Duration</span>
