@@ -189,15 +189,20 @@ function VendorField() {
     if (now - last < 300) {
       setUpdates(prev => ({ ...prev, [key]: { ...prev[key], showSlider: true, status: 'IN PROGRESS' } }));
     } else {
-      try {
-        const parseDate = (str: string) => { const p = str.split(/[ :]/).map(Number); return new Date(p[2], p[1] - 1, p[0], p[3] || 0, p[4] || 0); };
-        const startDate = parseDate(start);
-        const endDate = parseDate(end);
-        const currentTime = new Date();
-        if (currentTime < startDate || currentTime > endDate) return;
-      } catch { return; }
-      const pct = calculateOnTrackProgress(start, end);
-      setUpdates(prev => ({ ...prev, [key]: { ...prev[key], progress: pct, status: 'IN PROGRESS', showSlider: false } }));
+      setUpdates(prev => {
+        if (prev[key]?.status === 'IN PROGRESS') {
+          return { ...prev, [key]: { ...prev[key], progress: 0, status: 'PENDING', showSlider: false } };
+        }
+        try {
+          const parseDate = (str: string) => { const p = str.split(/[ :]/).map(Number); return new Date(p[2], p[1] - 1, p[0], p[3] || 0, p[4] || 0); };
+          const startDate = parseDate(start);
+          const endDate = parseDate(end);
+          const currentTime = new Date();
+          if (currentTime < startDate || currentTime > endDate) return prev;
+        } catch { return prev; }
+        const pct = calculateOnTrackProgress(start, end);
+        return { ...prev, [key]: { ...prev[key], progress: pct, status: 'IN PROGRESS', showSlider: false } };
+      });
     }
   }
 
