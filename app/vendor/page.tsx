@@ -68,7 +68,7 @@ const rawTeams = rawTeamsParam.split('%2C').map(t => decodeURIComponent(t)).join
   const [showInfo, setShowInfo] = useState(false);
   const [notifModalDismissed, setNotifModalDismissed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const holdTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  
 
   useEffect(() => {
     async function loadTasks() {
@@ -183,21 +183,18 @@ if (getCookie('sw_reload') === 'true') {
 
   const lastTap = useRef<Record<string, number>>({});
 
-function handleDoubleTap(key: string) {
+function handleOnTrackTap(key: string, start: string, end: string) {
   const now = Date.now();
   const last = lastTap.current[key] || 0;
-  if (now - last < 300) {
-    setUpdates(prev => ({ ...prev, [key]: { ...prev[key], showSlider: true, status: 'IN PROGRESS' } }));
-  }
+  const isDouble = now - last < 300;
   lastTap.current[key] = now;
-}
 
-function handleOnTrackRelease(key: string, start: string, end: string) {
-  const pct = calculateOnTrackProgress(start, end);
-  setUpdates(prev => {
-    if (prev[key]?.showSlider) return prev;
-    return { ...prev, [key]: { ...prev[key], progress: pct, status: 'IN PROGRESS', showSlider: false } };
-  });
+  if (isDouble) {
+    setUpdates(prev => ({ ...prev, [key]: { ...prev[key], showSlider: true, status: 'IN PROGRESS' } }));
+  } else {
+    const pct = calculateOnTrackProgress(start, end);
+    setUpdates(prev => ({ ...prev, [key]: { ...prev[key], progress: pct, status: 'IN PROGRESS', showSlider: false } }));
+  }
 }
     
 
@@ -551,8 +548,8 @@ function handleOnTrackRelease(key: string, start: string, end: string) {
 
                                   <div style={{ display: 'flex', gap: 6 }}>
                                     <button
-                                      onTouchEnd={() => { handleDoubleTap(opKey); handleOnTrackRelease(opKey, op.start, op.end); }}
-onMouseUp={() => { handleDoubleTap(opKey); handleOnTrackRelease(opKey, op.start, op.end); }}
+                                      onTouchEnd={() => handleOnTrackTap(opKey, op.start, op.end)}
+onMouseUp={() => handleOnTrackTap(opKey, op.start, op.end)}
                                       style={{ flex: 1, padding: '8px 4px', background: opUpdate.status === 'IN PROGRESS' ? 'rgba(74,158,224,0.15)' : 'transparent', border: `1px solid ${opUpdate.status === 'IN PROGRESS' ? '#4A9EE0' : th.border}`, borderRadius: 6, color: opUpdate.status === 'IN PROGRESS' ? '#4A9EE0' : th.textMuted, fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
                                       On Track
                                     </button>
