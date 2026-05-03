@@ -200,7 +200,7 @@ export default function VendorSetup() {
       {/* Email Modal */}
       {emailModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'grid', placeItems: 'center', zIndex: 999999 }} onClick={() => setEmailModal(null)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: th.surface, border: `1px solid ${th.border}`, borderRadius: 12, padding: 28, width: 380, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: th.surface, border: `1px solid ${th.border}`, borderRadius: 12, padding: 28, width: '90%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800, letterSpacing: '0.08em', color: th.textPrimary, marginBottom: 6 }}>
                 Send to {emailModal.role} Supervisor
@@ -216,14 +216,14 @@ export default function VendorSetup() {
                 value={firstName}
                 onChange={e => setFirstName(e.target.value)}
                 autoFocus
-                style={{ flex: 1, background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, color: th.textPrimary, outline: 'none' }}
+                style={{ width: '49%', background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, color: th.textPrimary, outline: 'none' }}
               />
               <input
                 type="text"
                 placeholder="Last Name"
                 value={lastName}
                 onChange={e => setLastName(e.target.value)}
-                style={{ flex: 1, background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, color: th.textPrimary, outline: 'none' }}
+                style={{ width: '49%', background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, color: th.textPrimary, outline: 'none' }}
               />
             </div>
             <input
