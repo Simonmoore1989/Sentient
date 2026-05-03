@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Overview() {
-  const [menuOpen, setMenuOpen] = useState(false);
   const [clientName, setClientName] = useState('');
   const [revision, setRevision] = useState('');
   const [darkMode, setDarkMode] = useState(true);
@@ -15,15 +14,6 @@ export default function Overview() {
     setRevision(localStorage.getItem('revision') || 'Revision');
     const saved = localStorage.getItem('darkMode');
     if (saved !== null) setDarkMode(saved === 'true');
-  }, []);
-
-  useEffect(() => {
-    const close = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest('.menu-container')) setMenuOpen(false);
-    };
-    document.addEventListener('click', close);
-    return () => document.removeEventListener('click', close);
   }, []);
 
   function getGreeting() {
@@ -47,14 +37,7 @@ export default function Overview() {
     border: '#D8DEE5', textPrimary: '#0D1318', textSecondary: '#4A5D6B', textMuted: '#8FA0AE',
   };
 
-  // Glossy glass styles
-  const glassCard = darkMode ? {
-    background: th.surface,
-    border: `1px solid ${th.border}`,
-    borderRadius: 8,
-    position: 'relative' as const,
-    overflow: 'hidden' as const,
-  } : {
+  const glassCard = {
     background: th.surface,
     border: `1px solid ${th.border}`,
     borderRadius: 8,
@@ -116,11 +99,11 @@ export default function Overview() {
     </div>
   );
 
-  const menuItems = [
-    { label: 'Dashboard', icon: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z', path: '/dashboard' },
-    { label: 'Upload New Schedule', icon: 'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12', path: '/' },
-    { label: 'Reports', icon: 'M22 12h-4l-3 9L9 3l-3 9H2', path: '/reports' },
-    { label: 'Vendor Setup', icon: 'M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71', path: '/vendor-setup' },
+  const navTiles = [
+    { label: 'Dashboard', path: '/dashboard', icon: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z' },
+    { label: 'Reports', path: '/reports', icon: 'M22 12h-4l-3 9L9 3l-3 9H2' },
+    { label: 'Vendor Setup', path: '/vendor-setup', icon: 'M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71' },
+    { label: 'New Schedule', path: '/', icon: 'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12' },
   ];
 
   return (
@@ -139,13 +122,11 @@ export default function Overview() {
           pointer-events: none; z-index: 0;
         }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-        .menu-item:hover { background: ${th.surface2} !important; }
-        .menu-item-danger:hover { background: rgba(224,90,90,0.08) !important; }
-        
+        .nav-tile:hover { border-color: #2ECC9A !important; color: #2ECC9A !important; background: rgba(46,204,154,0.06) !important; }
+        .nav-tile:hover svg { stroke: #2ECC9A; }
       `}</style>
 
-      <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'Space Grotesk', sans-serif", color: th.textPrimary, background: th.bg }}
-        onClick={() => setMenuOpen(false)}>
+      <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'Space Grotesk', sans-serif", color: th.textPrimary, background: th.bg }}>
 
         {/* Header */}
         <header style={{ padding: '20px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${th.border}`, flexShrink: 0, ...glassCard, borderRadius: 0 }}>
@@ -164,40 +145,18 @@ export default function Overview() {
             </div>
           </div>
 
-          <div className="menu-container" style={{ position: 'relative' }}>
-            <button onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
-              style={{ padding: '8px 10px', background: 'transparent', border: `1px solid ${th.border}`, borderRadius: 6, color: th.textSecondary, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="3" y1="6" x2="21" y2="6"/>
-                <line x1="3" y1="12" x2="21" y2="12"/>
-                <line x1="3" y1="18" x2="21" y2="18"/>
-              </svg>
-            </button>
-            {menuOpen && (
-              <div onClick={e => e.stopPropagation()} style={{ position: 'fixed', top: 60, right: 20, background: th.surface, border: `1px solid ${th.border}`, borderRadius: 8, padding: 6, minWidth: 200, zIndex: 99999, boxShadow: '0 16px 48px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {menuItems.map(item => (
-                  <div key={item.label} className="menu-item"
-                    onClick={() => { if (item.path) router.push(item.path); }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 5, fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: th.textSecondary, cursor: 'pointer' }}>
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d={item.icon}/></svg>
-                    {item.label}
-                  </div>
-                ))}
-                <div style={{ height: 1, background: th.border, margin: '4px 0' }}></div>
-                <div className="menu-item menu-item-danger" onClick={() => router.push('/')}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 5, fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#E05A5A', cursor: 'pointer' }}>
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-                  New Session
-                </div>
-                <div style={{ height: 1, background: th.border, margin: '4px 0' }}></div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px' }} onClick={e => e.stopPropagation()}>
-                  <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: th.textSecondary }}>{darkMode ? 'Dark Mode' : 'Light Mode'}</span>
-                  <div onClick={toggleDark} style={{ width: 40, height: 22, background: darkMode ? th.surface2 : 'rgba(46,204,154,0.15)', border: `1px solid ${darkMode ? th.border : '#2ECC9A'}`, borderRadius: 100, position: 'relative', cursor: 'pointer', transition: 'all 0.3s' }}>
-                    <div style={{ position: 'absolute', top: 2, left: darkMode ? 2 : 20, width: 16, height: 16, borderRadius: '50%', background: darkMode ? th.textMuted : '#2ECC9A', transition: 'all 0.3s' }}></div>
-                  </div>
-                </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* Dark mode toggle */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: th.textMuted }}>{darkMode ? 'Dark' : 'Light'}</span>
+              <div onClick={toggleDark} style={{ width: 36, height: 20, background: darkMode ? th.surface2 : 'rgba(46,204,154,0.15)', border: `1px solid ${darkMode ? th.border : '#2ECC9A'}`, borderRadius: 100, position: 'relative', cursor: 'pointer', transition: 'all 0.3s' }}>
+                <div style={{ position: 'absolute', top: 2, left: darkMode ? 2 : 16, width: 14, height: 14, borderRadius: '50%', background: darkMode ? th.textMuted : '#2ECC9A', transition: 'all 0.3s' }}></div>
               </div>
-            )}
+            </div>
+            {/* New Session */}
+            <button onClick={() => router.push('/')} style={{ padding: '7px 14px', background: 'transparent', border: `1px solid rgba(224,90,90,0.3)`, borderRadius: 6, color: '#E05A5A', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
+              New Session
+            </button>
           </div>
         </header>
 
@@ -220,6 +179,22 @@ export default function Overview() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Nav Tiles */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+            {navTiles.map(tile => (
+              <button
+                key={tile.label}
+                className="nav-tile"
+                onClick={() => router.push(tile.path)}
+                style={{ padding: '16px', background: th.surface, border: `1px solid ${th.border}`, borderRadius: 10, color: th.textSecondary, fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, transition: 'all 0.2s' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={th.textSecondary} strokeWidth="1.5">
+                  <path d={tile.icon}/>
+                </svg>
+                {tile.label}
+              </button>
+            ))}
           </div>
 
           {/* AI Briefing */}
@@ -320,7 +295,7 @@ export default function Overview() {
           </div>
 
           {/* Enter Dashboard */}
-          <button onClick={() => router.push('/dashboard')} style={{ width: '100%', padding: 15, background: 'linear-gradient(135deg, #2ECC9A 0%, #26b584 50%, #3ddba8 100%)', backgroundSize: '200% 200%', color: '#040D0A', border: 'none', borderRadius: 8, fontFamily: "'Space Grotesk', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 16px rgba(46,204,154,0.25)', position: 'relative', overflow: 'hidden' }}>
+          <button onClick={() => router.push('/dashboard')} style={{ width: '100%', padding: 15, background: 'linear-gradient(135deg, #2ECC9A 0%, #26b584 50%, #3ddba8 100%)', color: '#040D0A', border: 'none', borderRadius: 8, fontFamily: "'Space Grotesk', sans-serif", fontSize: 12, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 16px rgba(46,204,154,0.25)' }}>
             Enter Dashboard →
           </button>
 
