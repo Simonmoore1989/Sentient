@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '../../lib/supabase';
 
 export default function Reports() {
   const router = useRouter();
@@ -12,13 +13,29 @@ export default function Reports() {
   const [tasks, setTasks] = useState<any[]>([]);
 
   useEffect(() => {
-  setClientName(localStorage.getItem('client') || 'Client');
-  setRevision(localStorage.getItem('revision') || 'Revision');
-  const saved = localStorage.getItem('darkMode');
-  if (saved !== null) setDarkMode(saved === 'true');
-  const storedTasks = localStorage.getItem('tasks');
-  if (storedTasks) setTasks(JSON.parse(storedTasks));
-}, []);
+    setClientName(localStorage.getItem('client') || 'Client');
+    setRevision(localStorage.getItem('revision') || 'Revision');
+    const saved = localStorage.getItem('darkMode');
+    if (saved !== null) setDarkMode(saved === 'true');
+    loadTasks();
+  }, []);
+
+  async function loadTasks() {
+    const { data: shutdownData } = await supabase
+      .from('shutdowns')
+      .select('id')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (shutdownData) {
+      const { data: supabaseTasks } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('shutdown_id', shutdownData.id);
+      if (supabaseTasks) setTasks(supabaseTasks);
+    }
+  }
 
   function toggleDark() {
     const next = !darkMode;
@@ -34,12 +51,37 @@ export default function Reports() {
     border: '#D8DEE5', textPrimary: '#0D1318', textSecondary: '#4A5D6B', textMuted: '#8FA0AE',
   };
 
-  // Auto-generate handover content from task data
   const now = new Date();
   const shiftDate = now.toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' });
   const shiftTime = now.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
   const shiftType = now.getHours() >= 6 && now.getHours() < 18 ? 'Day Shift' : 'Night Shift';
   const nextShift = shiftType === 'Day Shift' ? 'Night Shift' : 'Day Shift';
+
+  // Pull all delayed op lines with reasons and hours
+  const delayedOps: { taskName: string; opName: string; reason: string; hours: number; progress: number }[] = [];
+  tasks.forEach(task => {
+    if (task.ops) {
+      task.ops.forEach((op: any) => {
+        if (op.status === 'DELAYED' && op.delayReason) {
+          delayedOps.push({
+            taskName: task.name,
+            opName: op.name,
+            reason: op.delayReason,
+            hours: op.delayHours || 0,
+            progress: op.progress || 0,
+          });
+        }
+      });
+    }
+  });
+
+  const totalDelayHours = delayedOps.reduce((sum, op) => sum + op.hours, 0);
+
+  // Focus areas — in progress tasks sorted by progress ascending (most at risk first)
+  const inProgressTasks = tasks
+    .filter(t => t.status === 'IN PROGRESS' || t.status === 'DELAYED')
+    .sort((a, b) => a.progress - b.progress)
+    .slice(0, 4);
 
   const handoverText = `SHUTDOWN HANDOVER REPORT
 ${revision} — ${clientName}
@@ -52,26 +94,29 @@ LAST 12 HOURS — SUMMARY
 - ${tasks.filter(t => t.status === 'COMPLETE').length} tasks completed this shift: ${tasks.filter(t => t.status === 'COMPLETE').map(t => t.name).join(', ') || 'None'}
 - ${tasks.filter(t => t.status === 'IN PROGRESS').length} tasks currently in progress: ${tasks.filter(t => t.status === 'IN PROGRESS').map(t => `${t.name} (${t.progress}%)`).join(', ') || 'None'}
 - ${tasks.filter(t => t.status === 'DELAYED').length} tasks delayed: ${tasks.filter(t => t.status === 'DELAYED').map(t => t.name).join(', ') || 'None'}
-- Overall schedule deficit: -22.4 hrs behind planned
+- Total schedule delay: ${totalDelayHours.toFixed(1)} hrs
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 DELAYS & ISSUES
-${tasks.filter(t => t.status === 'DELAYED').length === 0 ? '• No delays recorded this shift.' : tasks.filter(t => t.status === 'DELAYED').map(t => `• ${t.name} — currently ${t.progress}% complete, requires attention.`).join('\n')}
+${delayedOps.length === 0
+  ? '• No delays recorded this shift.'
+  : delayedOps.map(op => `• ${op.taskName} — ${op.opName}
+  Reason: ${op.reason}
+  Delay: ${op.hours}h | Progress: ${op.progress}%`).join('\n\n')}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 FOCUS AREAS FOR INCOMING SHIFT
-1. Priority: Accelerate T-005 SAG Mill Liner Change — critical path task, directly impacts shutdown end date.
-2. Complete T-003 Main Drive Bearing Replacement — 62% complete, target completion within next 8 hours.
-3. Monitor T-006 Pump Station Overhaul — escalate parts delivery if no resolution within 2 hours.
-4. Progress T-007 Electrical Panel Upgrade to completion — 75% complete.
+${inProgressTasks.length === 0
+  ? '• No active tasks requiring attention.'
+  : inProgressTasks.map((t, i) => `${i + 1}. ${t.name} — ${t.progress}% complete${t.status === 'DELAYED' ? ' — DELAYED' : ''}`).join('\n')}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 OVERALL SHUTDOWN STATUS
-Total Tasks: ${tasks.length} | Complete: ${tasks.filter(t => t.status === 'COMPLETE').length} (${tasks.length ? Math.round(tasks.filter(t => t.status === 'COMPLETE').length/tasks.length*100) : 0}%) | In Progress: ${tasks.filter(t => t.status === 'IN PROGRESS').length} | Delayed: ${tasks.filter(t => t.status === 'DELAYED').length} | Yet To Start: ${tasks.filter(t => t.status === 'PENDING').length}
-Schedule Deficit: -22.4 hrs | Projected End Date: AT RISK
+Total Tasks: ${tasks.length} | Complete: ${tasks.filter(t => t.status === 'COMPLETE').length} (${tasks.length ? Math.round(tasks.filter(t => t.status === 'COMPLETE').length / tasks.length * 100) : 0}%) | In Progress: ${tasks.filter(t => t.status === 'IN PROGRESS').length} | Delayed: ${tasks.filter(t => t.status === 'DELAYED').length} | Yet To Start: ${tasks.filter(t => t.status === 'PENDING').length}
+Total Delay Hours: ${totalDelayHours.toFixed(1)} hrs
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Generated by Sentient — Execution Intelligence
@@ -171,7 +216,6 @@ ${revision} | ${clientName} | ${shiftDate} ${shiftTime}`;
         {/* Main */}
         <main style={{ flex: 1, padding: '32px', display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-          {/* Page title */}
           <div>
             <div style={{ fontSize: 9, letterSpacing: '0.25em', textTransform: 'uppercase', color: '#2ECC9A', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
               <div style={{ width: 16, height: 1, background: '#2ECC9A' }}></div>
@@ -182,7 +226,6 @@ ${revision} | ${clientName} | ${shiftDate} ${shiftTime}`;
             </div>
           </div>
 
-          {/* Two report cards */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
 
             {/* Shift Handover */}
@@ -199,17 +242,18 @@ ${revision} | ${clientName} | ${shiftDate} ${shiftTime}`;
                   <span style={{ padding: '2px 10px', background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 100, fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: th.textSecondary }}>{shiftDate}</span>
                   <span style={{ padding: '2px 10px', background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 100, fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: th.textSecondary }}>{shiftTime}</span>
                   <span style={{ padding: '2px 10px', background: 'rgba(46,204,154,0.1)', border: '1px solid rgba(46,204,154,0.2)', borderRadius: 100, fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#2ECC9A' }}>{shiftType}</span>
+                  {delayedOps.length > 0 && (
+                    <span style={{ padding: '2px 10px', background: 'rgba(224,90,90,0.1)', border: '1px solid rgba(224,90,90,0.2)', borderRadius: 100, fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#E05A5A' }}>{delayedOps.length} Delay{delayedOps.length > 1 ? 's' : ''} — {totalDelayHours.toFixed(1)}h</span>
+                  )}
                 </div>
               </div>
 
-              {/* Preview */}
               <div style={{ flex: 1, padding: '16px 24px', overflowY: 'auto', maxHeight: 320 }}>
                 <pre style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, color: th.textSecondary, lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                   {handoverText}
                 </pre>
               </div>
 
-              {/* Send button */}
               <div style={{ padding: '16px 24px', borderTop: `1px solid ${th.border}` }}>
                 <button
                   onClick={sendViaOutlook}
@@ -245,9 +289,7 @@ ${revision} | ${clientName} | ${shiftDate} ${shiftTime}`;
               </div>
 
               <div style={{ padding: '16px 24px', borderTop: `1px solid ${th.border}` }}>
-                <button
-                  disabled
-                  style={{ width: '100%', padding: '12px', background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, color: th.textMuted, fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <button disabled style={{ width: '100%', padding: '12px', background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, color: th.textMuted, fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                   Load Post Shutdown Report
                 </button>
