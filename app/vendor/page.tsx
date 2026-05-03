@@ -69,7 +69,7 @@ function VendorField() {
   const [showInfo, setShowInfo] = useState(false);
   const [notifModalDismissed, setNotifModalDismissed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const holdTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const lastTapTimes = useRef<Record<string, number>>({});
 
   useEffect(() => {
     async function loadTasks() {
@@ -181,22 +181,24 @@ function VendorField() {
     }
   }
 
-  function handleOnTrackPress(key: string, start: string, end: string) {
-    holdTimers.current[key] = setTimeout(() => {
-      setUpdates(prev => ({ ...prev, [key]: { ...prev[key], showSlider: true, status: 'IN PROGRESS' } }));
-    }, 500);
-  }
+  function handleOnTrackTap(key: string, start: string, end: string) {
+    const now = Date.now();
+    const last = lastTapTimes.current[key] || 0;
+    lastTapTimes.current[key] = now;
 
-  function handleOnTrackRelease(key: string, start: string, end: string) {
-    if (holdTimers.current[key]) {
-      clearTimeout(holdTimers.current[key]);
-      delete holdTimers.current[key];
-    }
-    setUpdates(prev => {
-      if (prev[key]?.showSlider) return prev;
+    if (now - last < 300) {
+      setUpdates(prev => ({ ...prev, [key]: { ...prev[key], showSlider: true, status: 'IN PROGRESS' } }));
+    } else {
+      try {
+        const parseDate = (str: string) => { const p = str.split(/[ :]/).map(Number); return new Date(p[2], p[1] - 1, p[0], p[3] || 0, p[4] || 0); };
+        const startDate = parseDate(start);
+        const endDate = parseDate(end);
+        const currentTime = new Date();
+        if (currentTime < startDate || currentTime > endDate) return;
+      } catch { return; }
       const pct = calculateOnTrackProgress(start, end);
-      return { ...prev, [key]: { ...prev[key], progress: pct, status: 'IN PROGRESS', showSlider: false } };
-    });
+      setUpdates(prev => ({ ...prev, [key]: { ...prev[key], progress: pct, status: 'IN PROGRESS', showSlider: false } }));
+    }
   }
 
   function toggleExpand(id: string) {
@@ -537,10 +539,8 @@ function VendorField() {
 
                                   <div style={{ display: 'flex', gap: 6 }}>
                                     <button
-                                      onTouchStart={() => handleOnTrackPress(opKey, op.start, op.end)}
-                                      onTouchEnd={() => handleOnTrackRelease(opKey, op.start, op.end)}
-                                      onMouseDown={() => handleOnTrackPress(opKey, op.start, op.end)}
-                                      onMouseUp={() => handleOnTrackRelease(opKey, op.start, op.end)}
+                                      onTouchEnd={(e) => { e.preventDefault(); handleOnTrackTap(opKey, op.start, op.end); }}
+                                      onClick={() => handleOnTrackTap(opKey, op.start, op.end)}
                                       style={{ flex: 1, padding: '8px 4px', background: opUpdate.status === 'IN PROGRESS' ? 'rgba(74,158,224,0.15)' : 'transparent', border: `1px solid ${opUpdate.status === 'IN PROGRESS' ? '#4A9EE0' : th.border}`, borderRadius: 6, color: opUpdate.status === 'IN PROGRESS' ? '#4A9EE0' : th.textMuted, fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
                                       On Track
                                     </button>
