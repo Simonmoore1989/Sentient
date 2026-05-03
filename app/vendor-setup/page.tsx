@@ -239,11 +239,7 @@ export default function VendorSetup() {
                 <div style={{ flex: 1, background: th.surface2, border: `1px solid rgba(46,204,154,0.2)`, borderRadius: 6, padding: '8px 12px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, color: '#2ECC9A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {getCombinedLink(firstName, emailModal.role)}
                 </div>
-                <button
-                  onClick={() => navigator.clipboard.writeText(getCombinedLink(firstName, emailModal.role))}
-                  style={{ padding: '8px 12px', background: 'rgba(46,204,154,0.1)', border: '1px solid rgba(46,204,154,0.3)', borderRadius: 6, color: '#2ECC9A', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                  Copy
-                </button>
+                
               </div>
             )}
             <div style={{ display: 'flex', gap: 10 }}>
