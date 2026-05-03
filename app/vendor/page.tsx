@@ -521,7 +521,7 @@ if (getCookie('sw_reload') === 'true') {
                                       </div>
                                       <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 300, color: th.textSecondary }}>{op.name}</div>
                                     </div>
-                                    <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 600, color: opColor, marginLeft: 12 }}>{opProgress}%</span>
+                                    <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 400, color: opColor, marginLeft: 12 }}>{opProgress}%</span>
                                   </div>
 
                                   {opUpdate.showSlider && (
