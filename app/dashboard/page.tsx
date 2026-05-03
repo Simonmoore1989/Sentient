@@ -249,9 +249,10 @@ export default function Dashboard() {
             {[
               { label: 'All', value: 'ALL' },
               { label: 'In Progress', value: 'IN PROGRESS' },
+              { label: 'Critical', value: 'CRITICAL' },
               { label: 'Delayed', value: 'DELAYED' },
               { label: 'Yet To Start', value: 'PENDING' },
-              { label: 'Critical', value: 'CRITICAL' },
+            
             ].map(f => (
               <button key={f.value} className="filter-btn" onClick={() => setActiveFilter(f.value)}
                 style={{ padding: '5px 14px', border: `1px solid ${activeFilter === f.value ? (f.value === 'CRITICAL' ? '#FF9F1C' : '#2ECC9A') : th.border}`, borderRadius: 100, color: activeFilter === f.value ? (f.value === 'CRITICAL' ? '#FF9F1C' : '#2ECC9A') : th.textSecondary, fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', background: activeFilter === f.value ? (f.value === 'CRITICAL' ? 'rgba(255,159,28,0.08)' : 'rgba(46,204,154,0.08)') : 'transparent' }}>
