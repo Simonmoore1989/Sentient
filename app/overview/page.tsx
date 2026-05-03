@@ -92,12 +92,13 @@ export default function Overview() {
   }, [darkMode]);
 
   const card = (label: string, value: string, color: string, sub: string) => (
-    <div style={{ ...glassCard, padding: '16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <div style={{ fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, fontFamily: "'Space Grotesk', sans-serif" }}>{label}</div>
-      <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 26, fontWeight: 800, color }}>{value}</div>
-      <div style={{ fontSize: 9, color: th.textMuted, letterSpacing: '0.05em', fontFamily: "'Space Grotesk', sans-serif" }}>{sub}</div>
-    </div>
-  );
+  <div style={{ ...glassCard, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 1, height: 78 }}>
+    <div style={{ fontSize: 8, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, fontFamily: "'Space Grotesk', sans-serif" }}>{label}</div>
+    <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800, color }}>{value}</div>
+    <div style={{ fontSize: 8, color: th.textMuted, letterSpacing: '0.05em', fontFamily: "'Space Grotesk', sans-serif" }}>{sub}</div>
+  </div>
+);
+    
 
   const navTiles = [
     { label: 'Dashboard', path: '/dashboard', icon: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z' },
@@ -214,7 +215,7 @@ export default function Overview() {
                 <span style={{ color: '#2ECC9A', fontWeight: 600 }}>{revision}</span> is underway for <span style={{ color: th.textPrimary }}>{clientName}</span>. You are currently <span style={{ color: '#E05A5A', fontWeight: 600 }}>22.4 hrs behind</span> planned schedule. Review the S-Curve below and use AI recommendations to reflow your schedule before entering the dashboard.
               </div>
             </div>
-            <div style={{ opacity: 0.35, display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+            <div style={{ opacity: 0.35, display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 16 }}>
               {['T-005 SAG Mill delay impacting 3 downstream tasks — recommend pulling T-008 forward to Day 5.', 'Linkforce T2 overallocated Days 3–4. Consider redistributing 2 tasks to T3.', 'At current pace, final commissioning at risk by 14 hours. Schedule compression recommended.'].map((txt, i) => (
                 <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 10, color: th.textSecondary, lineHeight: 1.5, fontFamily: "'Space Grotesk', sans-serif" }}>
                   <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#2ECC9A', flexShrink: 0, marginTop: 5 }}></div>
@@ -231,44 +232,43 @@ export default function Overview() {
             </div>
           </div>
 
-          {/* Stats */}
-          <div>
-            <div style={{ fontSize: 9, letterSpacing: '0.25em', textTransform: 'uppercase', color: '#2ECC9A', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, fontFamily: "'Space Grotesk', sans-serif" }}>
-              <div style={{ width: 16, height: 1, background: '#2ECC9A' }}></div>
-              Task Summary
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-              {card('Complete', '91', '#2ECC9A', '37% of total')}
-              {card('In Progress', '44', '#4A9EE0', '18% of total')}
-              {card('Delayed', '12', '#E05A5A', '5% of total')}
-              {card('Yet To Start', '101', th.textSecondary, '41% of total')}
-            </div>
-          </div>
+          {/* Stats + S-Curve */}
+<div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', alignItems: 'stretch', gap: 20}}>
+  <div style={{ display: 'grid', gridTemplateRows: 'auto 1fr 1fr 1fr 1fr', gap: 6, height: 400}}>
+    <div style={{ fontSize: 9, letterSpacing: '0.25em', textTransform: 'uppercase', color: '#2ECC9A', display: 'flex', alignItems: 'center', gap: 8, fontFamily: "'Space Grotesk', sans-serif" }}>
+      <div style={{ width: 16, height: 1, background: '#2ECC9A' }}></div>
+      Task Summary
+    </div>
+    {card('Complete', '91', '#2ECC9A', '37% of total')}
+    {card('In Progress', '44', '#4A9EE0', '18% of total')}
+    {card('Delayed', '12', '#E05A5A', '5% of total')}
+    {card('Yet To Start', '101', th.textSecondary, '41% of total')}
+  </div>
 
-          {/* S-Curve */}
-          <div>
-            <div style={{ fontSize: 9, letterSpacing: '0.25em', textTransform: 'uppercase', color: '#2ECC9A', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, fontFamily: "'Space Grotesk', sans-serif" }}>
-              <div style={{ width: 16, height: 1, background: '#2ECC9A' }}></div>
-              S-Curve — Planned vs Actual
-            </div>
-            <div className="glass-sheen" style={{ ...glassCard, padding: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ fontSize: 9, color: th.textMuted, letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>12 MAY</span>
-                <div style={{ display: 'flex', gap: 14 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, color: th.textMuted, fontFamily: "'Space Grotesk', sans-serif" }}><div style={{ width: 18, height: 1, borderTop: '1.5px dashed #5A7080' }}></div>Planned</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, color: th.textMuted, fontFamily: "'Space Grotesk', sans-serif" }}><div style={{ width: 18, height: 2, background: '#4A9EE0', borderRadius: 1 }}></div>Actual</div>
-                </div>
-                <span style={{ fontSize: 9, color: th.textMuted, letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>19 MAY</span>
-              </div>
-              <div style={{ position: 'relative', height: 120 }}>
-                <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
-              </div>
-              <div style={{ marginTop: 12, background: 'rgba(224,90,90,0.06)', border: '1px solid rgba(224,90,90,0.15)', borderRadius: 5, padding: '7px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#E05A5A' }}>⚠ Schedule Deficit</span>
-                <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, color: '#E05A5A' }}>−22.4 hrs behind planned</span>
-              </div>
-            </div>
-          </div>
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ fontSize: 9, letterSpacing: '0.25em', textTransform: 'uppercase', color: '#2ECC9A', display: 'flex', alignItems: 'center', gap: 8, fontFamily: "'Space Grotesk', sans-serif" }}>
+      <div style={{ width: 16, height: 1, background: '#2ECC9A' }}></div>
+      S-Curve — Planned vs Actual
+    </div>
+    <div className="glass-sheen" style={{ ...glassCard, padding: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <span style={{ fontSize: 9, color: th.textMuted, letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>12 MAY</span>
+        <div style={{ display: 'flex', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, color: th.textMuted, fontFamily: "'Space Grotesk', sans-serif" }}><div style={{ width: 18, height: 1, borderTop: '1.5px dashed #5A7080' }}></div>Planned</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, color: th.textMuted, fontFamily: "'Space Grotesk', sans-serif" }}><div style={{ width: 18, height: 2, background: '#4A9EE0', borderRadius: 1 }}></div>Actual</div>
+        </div>
+        <span style={{ fontSize: 9, color: th.textMuted, letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>19 MAY</span>
+      </div>
+      <div style={{ position: 'relative', height: 250 }}>
+        <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
+      </div>
+      <div style={{ marginTop: 12, background: 'rgba(224,90,90,0.06)', border: '1px solid rgba(224,90,90,0.15)', borderRadius: 5, padding: '7px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#E05A5A' }}>⚠ Schedule Deficit</span>
+        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, color: '#E05A5A' }}>−22.4 hrs behind planned</span>
+      </div>
+    </div>
+  </div>
+</div>
 
           {/* Critical Path */}
           <div>
@@ -276,7 +276,7 @@ export default function Overview() {
               <div style={{ width: 16, height: 1, background: '#2ECC9A' }}></div>
               Critical Path
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, height: 200 }}>
               {[
                 { id: 'T-005', name: 'SAG Mill Liner Change', team: 'Linkforce T2', status: 'Delayed', color: '#E05A5A', bg: 'rgba(224,90,90,0.12)' },
                 { id: 'T-003', name: 'Main Drive Bearing Replacement', team: 'Linkforce T1', status: 'In Progress', color: '#4A9EE0', bg: 'rgba(74,158,224,0.12)' },
