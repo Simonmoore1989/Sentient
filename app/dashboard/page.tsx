@@ -229,9 +229,10 @@ export default function Dashboard() {
             { label: 'Total WOs', value: String(total), color: th.textPrimary, bar: th.textMuted, width: '100%' },
             { label: 'Complete', value: String(complete), color: '#2ECC9A', bar: '#2ECC9A', width: `${total ? Math.round(complete/total*100) : 0}%` },
             { label: 'In Progress', value: String(inProgress), color: '#4A9EE0', bar: '#4A9EE0', width: `${total ? Math.round(inProgress/total*100) : 0}%` },
+            { label: 'Critical', value: String(critical), color: '#FF9F1C', bar: '#FF9F1C', width: `${total ? Math.round(critical/total*100) : 0}%` },
             { label: 'Delayed', value: String(delayed), color: '#E05A5A', bar: '#E05A5A', width: `${total ? Math.round(delayed/total*100) : 0}%` },
             { label: 'Yet To Start', value: String(pending), color: th.textSecondary, bar: th.textMuted, width: `${total ? Math.round(pending/total*100) : 0}%` },
-            { label: 'Critical', value: String(critical), color: '#FF9F1C', bar: '#FF9F1C', width: `${total ? Math.round(critical/total*100) : 0}%` },
+            
           ].map((s, i) => (
             <div key={i} style={{ padding: '14px 24px', borderRight: i < 5 ? `1px solid ${th.border}` : 'none' }}>
               <div style={{ fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted, marginBottom: 4, fontFamily: "'Space Grotesk', sans-serif" }}>{s.label}</div>
