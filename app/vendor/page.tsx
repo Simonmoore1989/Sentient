@@ -16,6 +16,7 @@ function urlBase64ToUint8Array(base64String: string) {
   }
   return outputArray;
 }
+
 function setCookie(name: string, value: string, days = 365) {
   const expires = new Date(Date.now() + days * 864e5).toUTCString();
   document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
@@ -32,7 +33,7 @@ function VendorField() {
   const searchParams = useSearchParams();
 
   const rawTeamsParam = searchParams.get('teams') || searchParams.get('team') || '';
-const rawTeams = rawTeamsParam.split('%2C').map(t => decodeURIComponent(t)).join(',');
+  const rawTeams = rawTeamsParam.split('%2C').map(t => decodeURIComponent(t)).join(',');
   const rawName = searchParams.get('name') || '';
   const rawRole = searchParams.get('role') || '';
   const rawClient = decodeURIComponent(searchParams.get('client') || '');
@@ -68,7 +69,7 @@ const rawTeams = rawTeamsParam.split('%2C').map(t => decodeURIComponent(t)).join
   const [showInfo, setShowInfo] = useState(false);
   const [notifModalDismissed, setNotifModalDismissed] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  
+  const holdTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   useEffect(() => {
     async function loadTasks() {
@@ -113,47 +114,46 @@ const rawTeams = rawTeamsParam.split('%2C').map(t => decodeURIComponent(t)).join
 
     loadTasks();
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js');
-}
-
-if (getCookie('notifications_granted')) {
-  setPushRegistered(true);
-}
-
-// Complete push registration after SW reload
-if (getCookie('sw_reload') === 'true') {
-  setCookie('sw_reload', '', -1);
-  (async () => {
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      const existing = await reg.pushManager.getSubscription();
-      const subscription = existing || await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_KEY!)
-      });
-      const { data: shutdownData } = await supabase
-        .from('shutdowns')
-        .select('id')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-      if (shutdownData) {
-        await supabase.from('supervisors').upsert({
-          name: supervisorName,
-          role: supervisorRole,
-          team: teamsParam,
-          push_token: JSON.stringify(subscription),
-          shutdown_id: shutdownData.id,
-        }, { onConflict: 'name,shutdown_id' });
-      }
-      setPushRegistered(true);
-      setCookie('notifications_granted', 'true', 365);
-    } catch (err) {
-      console.log('Push registration after reload failed:', err);
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
     }
-  })();
-}
+
+    if (getCookie('notifications_granted')) {
+      setPushRegistered(true);
+    }
+
+    if (getCookie('sw_reload') === 'true') {
+      setCookie('sw_reload', '', -1);
+      (async () => {
+        try {
+          const reg = await navigator.serviceWorker.ready;
+          const existing = await reg.pushManager.getSubscription();
+          const subscription = existing || await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_KEY!)
+          });
+          const { data: shutdownData } = await supabase
+            .from('shutdowns')
+            .select('id')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          if (shutdownData) {
+            await supabase.from('supervisors').upsert({
+              name: supervisorName,
+              role: supervisorRole,
+              team: teamsParam,
+              push_token: JSON.stringify(subscription),
+              shutdown_id: shutdownData.id,
+            }, { onConflict: 'name,shutdown_id' });
+          }
+          setPushRegistered(true);
+          setCookie('notifications_granted', 'true', 365);
+        } catch (err) {
+          console.log('Push registration after reload failed:', err);
+        }
+      })();
+    }
   }, []);
 
   function getGreeting() {
@@ -181,22 +181,23 @@ if (getCookie('sw_reload') === 'true') {
     }
   }
 
-  const lastTap = useRef<Record<string, number>>({});
-
-function handleOnTrackTap(key: string, start: string, end: string) {
-  const now = Date.now();
-  const last = lastTap.current[key] || 0;
-  const isDouble = now - last < 300;
-  lastTap.current[key] = now;
-
-  if (isDouble) {
-    setUpdates(prev => ({ ...prev, [key]: { ...prev[key], showSlider: true, status: 'IN PROGRESS' } }));
-  } else {
-    const pct = calculateOnTrackProgress(start, end);
-    setUpdates(prev => ({ ...prev, [key]: { ...prev[key], progress: pct, status: 'IN PROGRESS', showSlider: false } }));
+  function handleOnTrackPress(key: string, start: string, end: string) {
+    holdTimers.current[key] = setTimeout(() => {
+      setUpdates(prev => ({ ...prev, [key]: { ...prev[key], showSlider: true, status: 'IN PROGRESS' } }));
+    }, 500);
   }
-}
-    
+
+  function handleOnTrackRelease(key: string, start: string, end: string) {
+    if (holdTimers.current[key]) {
+      clearTimeout(holdTimers.current[key]);
+      delete holdTimers.current[key];
+    }
+    setUpdates(prev => {
+      if (prev[key]?.showSlider) return prev;
+      const pct = calculateOnTrackProgress(start, end);
+      return { ...prev, [key]: { ...prev[key], progress: pct, status: 'IN PROGRESS', showSlider: false } };
+    });
+  }
 
   function toggleExpand(id: string) {
     setExpanded(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -279,68 +280,56 @@ function handleOnTrackTap(key: string, start: string, end: string) {
       `}</style>
 
       {/* Notification Permission Modal */}
-{showNotifModal && (
-  <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 99999, display: 'grid', placeItems: 'center' }}>
-    <div style={{ background: th.surface, border: `1px solid ${th.border}`, borderRadius: 14, padding: 24, width: '90%', maxWidth: 340, display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 36, height: 36, border: '1.5px solid #4A9EE0', borderRadius: 8, display: 'grid', placeItems: 'center', background: 'rgba(74,158,224,0.1)', flexShrink: 0 }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A9EE0" strokeWidth="1.5"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+      {showNotifModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 99999, display: 'grid', placeItems: 'center' }}>
+          <div style={{ background: th.surface, border: `1px solid ${th.border}`, borderRadius: 14, padding: 24, width: '90%', maxWidth: 340, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 36, height: 36, border: '1.5px solid #4A9EE0', borderRadius: 8, display: 'grid', placeItems: 'center', background: 'rgba(74,158,224,0.1)', flexShrink: 0 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A9EE0" strokeWidth="1.5"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+              </div>
+              <div>
+                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800, color: th.textPrimary }}>Enable Notifications</div>
+                <div style={{ fontSize: 10, color: th.textSecondary, marginTop: 2 }}>Stay updated on field changes</div>
+              </div>
+            </div>
+            <button
+              onClick={async () => {
+                setNotifModalDismissed(true);
+                try {
+                  const permission = await Notification.requestPermission();
+                  if (permission !== 'granted') return;
+                  const reg = await navigator.serviceWorker.register('/sw.js');
+                  const sw = await Promise.race([
+                    navigator.serviceWorker.ready,
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 10000))
+                  ]) as ServiceWorkerRegistration;
+                  const existing = await sw.pushManager.getSubscription();
+                  const subscription = existing || await sw.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_KEY!)
+                  });
+                  const { data: shutdownData } = await supabase.from('shutdowns').select('id').order('created_at', { ascending: false }).limit(1).single();
+                  if (shutdownData) {
+                    await supabase.from('supervisors').upsert({
+                      name: supervisorName,
+                      role: supervisorRole,
+                      team: teamsParam,
+                      push_token: JSON.stringify(subscription),
+                      shutdown_id: shutdownData.id,
+                    }, { onConflict: 'name,shutdown_id' });
+                  }
+                  setPushRegistered(true);
+                  setCookie('notifications_granted', 'true', 365);
+                } catch (err) {
+                  console.log('Push registration failed:', err);
+                }
+              }}
+              style={{ width: '100%', padding: '12px', background: '#4A9EE0', border: 'none', borderRadius: 8, color: '#fff', fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
+              Enable
+            </button>
+          </div>
         </div>
-        <div>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 800, color: th.textPrimary }}>Enable Notifications</div>
-          <div style={{ fontSize: 10, color: th.textSecondary, marginTop: 2 }}>Stay updated on field changes</div>
-        </div>
-      </div>
-      <button
-        onClick={async () => {
-  setNotifModalDismissed(true);
-  try {
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') return;
-
-    const reg = await navigator.serviceWorker.register('/sw.js');
-    
-    // Wait up to 10 seconds for service worker to be ready
-    const sw = await Promise.race([
-      navigator.serviceWorker.ready,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 10000))
-    ]) as ServiceWorkerRegistration;
-
-    const existing = await sw.pushManager.getSubscription();
-    const subscription = existing || await sw.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_KEY!)
-    });
-
-    const { data: shutdownData } = await supabase
-      .from('shutdowns')
-      .select('id')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (shutdownData) {
-      await supabase.from('supervisors').upsert({
-        name: supervisorName,
-        role: supervisorRole,
-        team: teamsParam,
-        push_token: JSON.stringify(subscription),
-        shutdown_id: shutdownData.id,
-      }, { onConflict: 'name,shutdown_id' });
-    }
-
-    setPushRegistered(true);
-    setCookie('notifications_granted', 'true', 365);
-  } catch (err) {
-    console.log('Push registration failed:', err);
-  }
-}}
-        style={{ width: '100%', padding: '12px', background: '#4A9EE0', border: 'none', borderRadius: 8, color: '#fff', fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}>
-        Enable
-      </button>
-    </div>
-  </div>
-)}
+      )}
 
       <div style={{ minHeight: '100vh', background: th.bg, fontFamily: "'Space Grotesk', sans-serif", color: th.textPrimary, paddingBottom: 40 }} onClick={() => { setMenuOpen(false); setShowInfo(false); }}>
 
@@ -548,8 +537,10 @@ function handleOnTrackTap(key: string, start: string, end: string) {
 
                                   <div style={{ display: 'flex', gap: 6 }}>
                                     <button
-                                      onTouchEnd={() => handleOnTrackTap(opKey, op.start, op.end)}
-onMouseUp={() => handleOnTrackTap(opKey, op.start, op.end)}
+                                      onTouchStart={() => handleOnTrackPress(opKey, op.start, op.end)}
+                                      onTouchEnd={() => handleOnTrackRelease(opKey, op.start, op.end)}
+                                      onMouseDown={() => handleOnTrackPress(opKey, op.start, op.end)}
+                                      onMouseUp={() => handleOnTrackRelease(opKey, op.start, op.end)}
                                       style={{ flex: 1, padding: '8px 4px', background: opUpdate.status === 'IN PROGRESS' ? 'rgba(74,158,224,0.15)' : 'transparent', border: `1px solid ${opUpdate.status === 'IN PROGRESS' ? '#4A9EE0' : th.border}`, borderRadius: 6, color: opUpdate.status === 'IN PROGRESS' ? '#4A9EE0' : th.textMuted, fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
                                       On Track
                                     </button>
