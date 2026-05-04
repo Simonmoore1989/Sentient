@@ -4,7 +4,8 @@
       "Bash(find *)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\flook\\\\OneDrive\\\\Desktop\\\\sentient\" -Recurse -File | Select-Object -First 100 | ForEach-Object { $_.FullName })"
     ]
   }
 }

@@ -1,11 +1,33 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '../../lib/supabase';
+
+type Task = {
+  id: string;
+  start: string;
+  end: string;
+  duration: string;
+  progress: number;
+  status: string;
+  name: string;
+  team: string;
+  wo: string;
+  shutdown_id: string;
+};
+
+function parseTaskDate(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  const parts = dateStr.split(/[/: ]/).map(Number);
+  if (parts.length >= 5) return new Date(parts[2], parts[1] - 1, parts[0], parts[3], parts[4]);
+  return null;
+}
 
 export default function Overview() {
   const [clientName, setClientName] = useState('');
   const [revision, setRevision] = useState('');
   const [darkMode, setDarkMode] = useState(true);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -14,6 +36,24 @@ export default function Overview() {
     setRevision(localStorage.getItem('revision') || 'Revision');
     const saved = localStorage.getItem('darkMode');
     if (saved !== null) setDarkMode(saved === 'true');
+  }, []);
+
+  useEffect(() => {
+    async function loadTasks() {
+      const { data: shutdown } = await supabase
+        .from('shutdowns')
+        .select('id')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      if (!shutdown) return;
+      const { data } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('shutdown_id', shutdown.id);
+      if (data) setTasks(data);
+    }
+    loadTasks();
   }, []);
 
   function getGreeting() {
@@ -45,6 +85,47 @@ export default function Overview() {
     overflow: 'hidden' as const,
   };
 
+  // --- Derived task stats ---
+  const total = tasks.length;
+  const completeCount = tasks.filter(t => t.status === 'COMPLETE').length;
+  const inProgressCount = tasks.filter(t => t.status === 'IN PROGRESS').length;
+  const delayedCount = tasks.filter(t => t.status === 'DELAYED').length;
+  const pendingCount = tasks.filter(t => t.status !== 'COMPLETE' && t.status !== 'IN PROGRESS' && t.status !== 'DELAYED').length;
+  const pct = (n: number) => total > 0 ? `${Math.round(n / total * 100)}% of total` : '—';
+
+  // --- Date labels and schedule deficit ---
+  let startLabel = '—', endLabel = '—', deficitHours = 0;
+  if (tasks.length > 0) {
+    const fmtMonth = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    const fmt = (ms: number) => { const d = new Date(ms); return `${d.getDate()} ${fmtMonth[d.getMonth()]}`; };
+
+    type Parsed = { s: number; e: number; dh: number; progress: number; status: string };
+    const parsed: Parsed[] = tasks.flatMap(t => {
+      const sd = parseTaskDate(t.start), ed = parseTaskDate(t.end);
+      if (!sd || !ed) return [];
+      const dh = (ed.getTime() - sd.getTime()) / 3600000;
+      return dh > 0 ? [{ s: sd.getTime(), e: ed.getTime(), dh, progress: t.progress ?? 0, status: t.status }] : [];
+    });
+
+    if (parsed.length > 0) {
+      const minMs = Math.min(...parsed.map(p => p.s));
+      const maxMs = Math.max(...parsed.map(p => p.e));
+      startLabel = fmt(minMs);
+      endLabel = fmt(maxMs);
+
+      const totalHrs = parsed.reduce((sum, p) => sum + p.dh, 0);
+      const now = Date.now();
+      let plannedHrs = 0;
+      for (const p of parsed) {
+        if (now <= p.s) continue;
+        plannedHrs += now >= p.e ? p.dh : p.dh * (now - p.s) / (p.e - p.s);
+      }
+      const actualHrs = parsed.reduce((sum, p) => sum + p.dh * (p.progress / 100), 0);
+      deficitHours = totalHrs > 0 ? plannedHrs - actualHrs : 0;
+    }
+  }
+
+  // --- Canvas: S-curve with real data ---
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -57,8 +138,7 @@ export default function Overview() {
     const pad = { left: 32, right: 16, top: 16, bottom: 20 };
     const cW = W - pad.left - pad.right;
     const cH = H - pad.top - pad.bottom;
-    function sCurve(t: number) { return 1 / (1 + Math.exp(-8 * (t - 0.5))); }
-    function norm(t: number) { const lo = sCurve(0), hi = sCurve(1); return (sCurve(t) - lo) / (hi - lo); }
+
     [0, 0.25, 0.5, 0.75, 1].forEach(v => {
       const y = pad.top + cH - v * cH;
       ctx.beginPath(); ctx.strokeStyle = 'rgba(30,42,53,0.8)'; ctx.lineWidth = 0.5;
@@ -67,21 +147,76 @@ export default function Overview() {
       ctx.font = '9px Space Grotesk, sans-serif'; ctx.fillStyle = 'rgba(46,64,80,0.9)'; ctx.textAlign = 'right';
       ctx.fillText(Math.round(v * 100) + '%', pad.left - 6, y + 3);
     });
+
+    type Parsed = { s: number; e: number; dh: number; progress: number; status: string };
+    const parsed: Parsed[] = tasks.flatMap(t => {
+      const sd = parseTaskDate(t.start), ed = parseTaskDate(t.end);
+      if (!sd || !ed) return [];
+      const dh = (ed.getTime() - sd.getTime()) / 3600000;
+      return dh > 0 ? [{ s: sd.getTime(), e: ed.getTime(), dh, progress: t.progress ?? 0, status: t.status }] : [];
+    });
+
+    if (parsed.length === 0) return;
+
+    const minMs = Math.min(...parsed.map(p => p.s));
+    const maxMs = Math.max(...parsed.map(p => p.e));
+    const totalHrs = parsed.reduce((sum, p) => sum + p.dh, 0);
+    const totalDuration = maxMs - minMs;
+    if (totalDuration <= 0 || totalHrs <= 0) return;
+
+    const N = 100;
+    const now = Date.now();
+
+    function plannedAt(ms: number): number {
+      let h = 0;
+      for (const p of parsed) {
+        if (ms <= p.s) continue;
+        h += ms >= p.e ? p.dh : p.dh * (ms - p.s) / (p.e - p.s);
+      }
+      return h / totalHrs;
+    }
+
+    function actualAt(ms: number): number {
+      let h = 0;
+      for (const p of parsed) {
+        if (ms < p.s) continue;
+        if (p.status === 'COMPLETE') {
+          h += ms >= p.e ? p.dh : p.dh * (ms - p.s) / (p.e - p.s);
+        } else if (p.status === 'IN PROGRESS' || p.status === 'DELAYED') {
+          const elapsed = Math.max(1, now - p.s);
+          h += p.dh * (p.progress / 100) * Math.min(1, (ms - p.s) / elapsed);
+        }
+      }
+      return h / totalHrs;
+    }
+
     const planned: { x: number; y: number }[] = [];
-    for (let i = 0; i <= 100; i++) { const t = i / 100; planned.push({ x: pad.left + t * cW, y: pad.top + cH - norm(t) * cH }); }
+    for (let i = 0; i <= N; i++) {
+      const ms = minMs + (i / N) * totalDuration;
+      planned.push({ x: pad.left + (i / N) * cW, y: pad.top + cH - plannedAt(ms) * cH });
+    }
+
     ctx.beginPath(); ctx.strokeStyle = 'rgba(90,112,128,0.5)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
     planned.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.stroke(); ctx.setLineDash([]);
-    const todayT = 0.38, deficit = 0.09;
+
+    const todayNorm = Math.min(1, Math.max(0, (now - minMs) / totalDuration));
+    const todayIdx = Math.round(todayNorm * N);
+
     const actual: { x: number; y: number }[] = [];
-    for (let i = 0; i <= Math.round(todayT * 100); i++) {
-      const t = i / 100; const p = norm(t); const a = Math.max(0, p - deficit * Math.sin(Math.PI * t));
-      actual.push({ x: pad.left + t * cW, y: pad.top + cH - a * cH });
+    for (let i = 0; i <= todayIdx; i++) {
+      const ms = minMs + (i / N) * totalDuration;
+      actual.push({ x: pad.left + (i / N) * cW, y: pad.top + cH - actualAt(ms) * cH });
     }
+
+    if (actual.length === 0) return;
+
     ctx.beginPath(); actual.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
     for (let i = actual.length - 1; i >= 0; i--) ctx.lineTo(planned[i].x, planned[i].y);
     ctx.closePath(); ctx.fillStyle = 'rgba(224,90,90,0.08)'; ctx.fill();
+
     ctx.beginPath(); ctx.strokeStyle = '#4A9EE0'; ctx.lineWidth = 2;
     actual.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.stroke();
+
     const last = actual[actual.length - 1];
     ctx.beginPath(); ctx.arc(last.x, last.y, 4, 0, Math.PI * 2); ctx.fillStyle = '#4A9EE0'; ctx.fill();
     ctx.beginPath(); ctx.arc(last.x, last.y, 7, 0, Math.PI * 2); ctx.strokeStyle = 'rgba(74,158,224,0.3)'; ctx.lineWidth = 1.5; ctx.stroke();
@@ -89,7 +224,7 @@ export default function Overview() {
     ctx.moveTo(last.x, pad.top); ctx.lineTo(last.x, pad.top + cH); ctx.stroke();
     ctx.font = '7px Syne, sans-serif'; ctx.fillStyle = '#2ECC9A'; ctx.textAlign = 'center';
     ctx.fillText('TODAY', last.x, pad.top - 4);
-  }, [darkMode]);
+  }, [darkMode, tasks]);
 
   const card = (label: string, value: string, color: string, sub: string) => (
   <div style={{ ...glassCard, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 1, height: 78 }}>
@@ -98,7 +233,7 @@ export default function Overview() {
     <div style={{ fontSize: 8, color: th.textMuted, letterSpacing: '0.05em', fontFamily: "'Space Grotesk', sans-serif" }}>{sub}</div>
   </div>
 );
-    
+
 
   const navTiles = [
     { label: 'Dashboard', path: '/dashboard', icon: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z' },
@@ -106,6 +241,9 @@ export default function Overview() {
     { label: 'Vendor Setup', path: '/vendor-setup', icon: 'M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71' },
     { label: 'New Schedule', path: '/', icon: 'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12' },
   ];
+
+  const deficitPositive = deficitHours > 0;
+  const deficitColor = deficitPositive ? '#E05A5A' : '#2ECC9A';
 
   return (
     <>
@@ -147,14 +285,12 @@ export default function Overview() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {/* Dark mode toggle */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: th.textMuted }}>{darkMode ? 'Dark' : 'Light'}</span>
               <div onClick={toggleDark} style={{ width: 36, height: 20, background: darkMode ? th.surface2 : 'rgba(46,204,154,0.15)', border: `1px solid ${darkMode ? th.border : '#2ECC9A'}`, borderRadius: 100, position: 'relative', cursor: 'pointer', transition: 'all 0.3s' }}>
                 <div style={{ position: 'absolute', top: 2, left: darkMode ? 2 : 16, width: 14, height: 14, borderRadius: '50%', background: darkMode ? th.textMuted : '#2ECC9A', transition: 'all 0.3s' }}></div>
               </div>
             </div>
-            {/* New Session */}
             <button onClick={() => router.push('/')} style={{ padding: '7px 14px', background: 'transparent', border: `1px solid rgba(224,90,90,0.3)`, borderRadius: 6, color: '#E05A5A', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
               New Session
             </button>
@@ -212,7 +348,7 @@ export default function Overview() {
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700, color: th.textPrimary, marginBottom: 8 }}>{getGreeting()}, welcome back.</div>
               <div style={{ fontSize: 11, color: th.textSecondary, lineHeight: 1.7, fontFamily: "'Space Grotesk', sans-serif" }}>
-                <span style={{ color: '#2ECC9A', fontWeight: 600 }}>{revision}</span> is underway for <span style={{ color: th.textPrimary }}>{clientName}</span>. You are currently <span style={{ color: '#E05A5A', fontWeight: 600 }}>22.4 hrs behind</span> planned schedule. Review the S-Curve below and use AI recommendations to reflow your schedule before entering the dashboard.
+                <span style={{ color: '#2ECC9A', fontWeight: 600 }}>{revision}</span> is underway for <span style={{ color: th.textPrimary }}>{clientName}</span>. You are currently <span style={{ color: deficitColor, fontWeight: 600 }}>{deficitPositive ? `${deficitHours.toFixed(1)} hrs behind` : deficitHours < 0 ? `${Math.abs(deficitHours).toFixed(1)} hrs ahead of` : 'on'}</span> planned schedule. Review the S-Curve below and use AI recommendations to reflow your schedule before entering the dashboard.
               </div>
             </div>
             <div style={{ opacity: 0.35, display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 16 }}>
@@ -239,10 +375,10 @@ export default function Overview() {
       <div style={{ width: 16, height: 1, background: '#2ECC9A' }}></div>
       Task Summary
     </div>
-    {card('Complete', '91', '#2ECC9A', '37% of total')}
-    {card('In Progress', '44', '#4A9EE0', '18% of total')}
-    {card('Delayed', '12', '#E05A5A', '5% of total')}
-    {card('Yet To Start', '101', th.textSecondary, '41% of total')}
+    {card('Complete', String(completeCount), '#2ECC9A', pct(completeCount))}
+    {card('In Progress', String(inProgressCount), '#4A9EE0', pct(inProgressCount))}
+    {card('Delayed', String(delayedCount), '#E05A5A', pct(delayedCount))}
+    {card('Yet To Start', String(pendingCount), th.textSecondary, pct(pendingCount))}
   </div>
 
   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -252,19 +388,27 @@ export default function Overview() {
     </div>
     <div className="glass-sheen" style={{ ...glassCard, padding: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <span style={{ fontSize: 9, color: th.textMuted, letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>12 MAY</span>
+        <span style={{ fontSize: 9, color: th.textMuted, letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>{startLabel}</span>
         <div style={{ display: 'flex', gap: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, color: th.textMuted, fontFamily: "'Space Grotesk', sans-serif" }}><div style={{ width: 18, height: 1, borderTop: '1.5px dashed #5A7080' }}></div>Planned</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 9, color: th.textMuted, fontFamily: "'Space Grotesk', sans-serif" }}><div style={{ width: 18, height: 2, background: '#4A9EE0', borderRadius: 1 }}></div>Actual</div>
         </div>
-        <span style={{ fontSize: 9, color: th.textMuted, letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>19 MAY</span>
+        <span style={{ fontSize: 9, color: th.textMuted, letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>{endLabel}</span>
       </div>
       <div style={{ position: 'relative', height: 250 }}>
         <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
       </div>
-      <div style={{ marginTop: 12, background: 'rgba(224,90,90,0.06)', border: '1px solid rgba(224,90,90,0.15)', borderRadius: 5, padding: '7px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#E05A5A' }}>⚠ Schedule Deficit</span>
-        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, color: '#E05A5A' }}>−22.4 hrs behind planned</span>
+      <div style={{ marginTop: 12, background: deficitPositive ? 'rgba(224,90,90,0.06)' : 'rgba(46,204,154,0.06)', border: `1px solid ${deficitPositive ? 'rgba(224,90,90,0.15)' : 'rgba(46,204,154,0.15)'}`, borderRadius: 5, padding: '7px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: deficitColor }}>
+          {deficitPositive ? '⚠ Schedule Deficit' : deficitHours < 0 ? '✓ Ahead of Schedule' : '✓ On Schedule'}
+        </span>
+        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, color: deficitColor }}>
+          {deficitPositive
+            ? `−${deficitHours.toFixed(1)} hrs behind planned`
+            : deficitHours < 0
+            ? `+${Math.abs(deficitHours).toFixed(1)} hrs ahead of planned`
+            : 'On schedule'}
+        </span>
       </div>
     </div>
   </div>
