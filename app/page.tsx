@@ -1,6 +1,6 @@
 'use client';
 import { supabase } from '../lib/supabase';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
@@ -8,11 +8,8 @@ export default function Home() {
   const [revision, setRevision] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [showUploadTooltip, setShowUploadTooltip] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    router.push('/login');
-  }, []);
 
   const isReady = client && revision && file;
 
@@ -43,7 +40,7 @@ export default function Home() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #080C0F; }
         body::before {
@@ -125,10 +122,50 @@ export default function Home() {
               {/* CSV Upload */}
               <div
                 style={{ position: 'relative' }}
+                onMouseEnter={() => setShowUploadTooltip(true)}
+                onMouseLeave={() => setShowUploadTooltip(false)}
                 onDragOver={e => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={handleDrop}
               >
+                {showUploadTooltip && (
+                  <div style={{ position: 'absolute', bottom: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 50, background: '#0E1419', border: '1px solid rgba(46,204,154,0.3)', borderRadius: 10, padding: '16px 18px' }}>
+                    <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#E8EDF2', marginBottom: 12 }}>
+                      Schedule Requirements
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontFamily: "'Space Grotesk', sans-serif" }}>
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <span style={{ fontSize: 9, color: '#5A7080', letterSpacing: '0.08em', textTransform: 'uppercase', minWidth: 90, flexShrink: 0 }}>File Format</span>
+                        <span style={{ fontSize: 9, color: '#E8EDF2' }}>CSV (.csv)</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <span style={{ fontSize: 9, color: '#5A7080', letterSpacing: '0.08em', textTransform: 'uppercase', minWidth: 90, flexShrink: 0 }}>Exported From</span>
+                        <span style={{ fontSize: 9, color: '#E8EDF2' }}>Microsoft Project</span>
+                      </div>
+                      <div style={{ height: 1, background: '#1E2A35', margin: '6px 0' }} />
+                      <div style={{ fontSize: 9, color: '#5A7080', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>Required Columns</div>
+                      {[
+                        { col: 'Order Number',     desc: 'Work order number' },
+                        { col: 'Operation Number', desc: 'Op line number (leave blank for WO parent row)' },
+                        { col: 'Name',             desc: 'Task or operation name' },
+                        { col: 'Start',            desc: 'Start date/time' },
+                        { col: 'Finish',           desc: 'Finish date/time' },
+                        { col: 'Duration',         desc: 'Task duration' },
+                        { col: 'Crew',             desc: 'Team or resource group name' },
+                        { col: 'Complete',         desc: 'Percentage complete (0–100)' },
+                      ].map(({ col, desc }) => (
+                        <div key={col} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                          <span style={{ fontSize: 8, color: '#2ECC9A', flexShrink: 0 }}>•</span>
+                          <span style={{ fontSize: 9, color: '#E8EDF2', fontWeight: 600 }}>{col}</span>
+                          <span style={{ fontSize: 9, color: '#5A7080' }}>— {desc}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Arrow */}
+                    <div style={{ position: 'absolute', bottom: -7, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderTop: '7px solid rgba(46,204,154,0.3)' }} />
+                    <div style={{ position: 'absolute', bottom: -5, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderTop: '6px solid #0E1419' }} />
+                  </div>
+                )}
                 <input
                   type="file"
                   accept=".csv"
