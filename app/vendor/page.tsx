@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useRef, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 
 function urlBase64ToUint8Array(base64String: string) {
@@ -66,8 +66,8 @@ function VendorField() {
     }
     return true;
   });
-  const [showInfo, setShowInfo] = useState(false);
   const [notifModalDismissed, setNotifModalDismissed] = useState(false);
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const lastTapTimes = useRef<Record<string, number>>({});
 
@@ -342,7 +342,7 @@ function VendorField() {
         </div>
       )}
 
-      <div style={{ minHeight: '100vh', background: th.bg, fontFamily: "'Space Grotesk', sans-serif", color: th.textPrimary, paddingBottom: 40 }} onClick={() => { setMenuOpen(false); setShowInfo(false); }}>
+      <div style={{ minHeight: '100vh', background: th.bg, fontFamily: "'Space Grotesk', sans-serif", color: th.textPrimary, paddingBottom: 40 }} onClick={() => setMenuOpen(false)}>
 
         {/* Header */}
         <div style={{ background: th.surface, borderBottom: `1px solid ${th.border}`, padding: '14px 16px', position: 'sticky', top: 0, zIndex: 10 }}>
@@ -406,39 +406,21 @@ function VendorField() {
           )}
         </div>
 
-        {showInfo && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 99999, display: 'grid', placeItems: 'center' }} onClick={() => setShowInfo(false)}>
-            <div onClick={e => e.stopPropagation()} style={{ background: th.surface, border: `1px solid ${th.border}`, borderRadius: 14, padding: 24, width: '90%', maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 800, color: th.textPrimary }}>Shutdown Info</div>
-                <button onClick={() => setShowInfo(false)} style={{ background: 'transparent', border: 'none', color: th.textMuted, cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>×</button>
-              </div>
-              {['Contact List', 'Training Schedule', 'Bus Schedule', 'Flight Times', 'Plant Map', 'Camp Map'].map(item => (
-                <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, cursor: 'pointer' }}>
-                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: th.textSecondary }}>{item}</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={th.textMuted} strokeWidth="2" style={{ marginLeft: 'auto' }}><polyline points="9 18 15 12 9 6"/></svg>
-                </div>
-              ))}
-              <div style={{ fontSize: 9, color: th.textMuted, textAlign: 'center', letterSpacing: '0.1em' }}>DOCUMENTS COMING SOON</div>
-            </div>
-          </div>
-        )}
-
         {/* Quick Access */}
         <div style={{ background: th.surface, borderBottom: `1px solid ${th.border}`, padding: '10px 16px', overflowX: 'auto', WebkitOverflowScrolling: 'touch' as any }}>
           <div style={{ display: 'flex', gap: 14, width: 'max-content' }}>
             {([
-              { label: 'Contact List', icon: <><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></> },
-              { label: 'Training Schedule', icon: <><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></> },
-              { label: 'Bus Schedule', icon: <><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M3 9h18M3 13h18M8 19v2M16 19v2M8 17h-.01M16 17h-.01"/></> },
-              { label: 'Flight Times', icon: <><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></> },
-              { label: 'Plant Map', icon: <><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></> },
-              { label: 'Camp Map', icon: <><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></> },
-            ] as { label: string; icon: React.ReactNode }[]).map(item => (
+              { label: 'Contact List',      slug: 'contacts',  icon: <><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></> },
+              { label: 'Training Schedule', slug: 'training',  icon: <><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></> },
+              { label: 'Bus Schedule',      slug: 'bus',       icon: <><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M3 9h18M3 13h18M8 19v2M16 19v2M8 17h-.01M16 17h-.01"/></> },
+              { label: 'Flight Times',      slug: 'flights',   icon: <><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></> },
+              { label: 'Plant Map',         slug: 'plant-map', icon: <><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></> },
+              { label: 'Camp Map',          slug: 'camp-map',  icon: <><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></> },
+            ] as { label: string; slug: string; icon: React.ReactNode }[]).map(item => (
               <button
                 key={item.label}
                 className="qb-btn"
-                onClick={(e) => { e.stopPropagation(); setShowInfo(true); }}
+                onClick={(e) => { e.stopPropagation(); router.push(`/vendor/info/${item.slug}`); }}
               >
                 <div className="qb-circ" style={{ background: th.surface2, border: `1px solid ${th.border}`, color: th.textSecondary }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
