@@ -9,7 +9,7 @@ webpush.setVapidDetails(
 
 export async function POST(req: NextRequest) {
   try {
-    const { subscription, title, body } = await req.json();
+    const { subscription, title, body, url, taskId, opIndex, shutdownId } = await req.json();
 
     if (!subscription) {
       return NextResponse.json({ error: 'No subscription provided' }, { status: 400 });
@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     await webpush.sendNotification(
       pushSubscription,
-      JSON.stringify({ title, body })
+      JSON.stringify({ title, body, url, taskId, opIndex, shutdownId })
     );
 
     return NextResponse.json({ success: true });

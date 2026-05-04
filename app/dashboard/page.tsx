@@ -411,7 +411,10 @@ export default function Dashboard() {
               subscription: JSON.parse(supervisor.push_token),
               title: 'Sentient — Update Required',
               body: `Out of sequence update required on Op Line ${op.op} — ${op.name}`,
-              url: `/vendor?teams=${supervisor.team}&name=${supervisor.name}&role=${supervisor.role}`
+              url: `/vendor?teams=${supervisor.team}&name=${supervisor.name}&role=${supervisor.role}`,
+              taskId: task.id,
+              opIndex: oi,
+              shutdownId: task.shutdown_id
             })
           });
         }
