@@ -346,13 +346,15 @@ export default function Overview() {
               </button>
             </div>
             <div style={{ marginBottom: 16 }}>
-              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700, color: th.textPrimary, marginBottom: 8 }}>{getGreeting()}, welcome back.</div>
-              <div style={{ fontSize: 11, color: th.textSecondary, lineHeight: 1.7, fontFamily: "'Space Grotesk', sans-serif" }}>
-                <span style={{ color: '#2ECC9A', fontWeight: 600 }}>{revision}</span> is underway for <span style={{ color: th.textPrimary }}>{clientName}</span>. You are currently <span style={{ color: deficitColor, fontWeight: 600 }}>{deficitPositive ? `${deficitHours.toFixed(1)} hrs behind` : deficitHours < 0 ? `${Math.abs(deficitHours).toFixed(1)} hrs ahead of` : 'on'}</span> planned schedule. Review the S-Curve below and use AI recommendations to reflow your schedule before entering the dashboard.
+              <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 15, fontWeight: 700, color: th.textPrimary, marginBottom: 6 }}>{getGreeting()}, welcome back.</div>
+              <div style={{ fontSize: 11, color: th.textSecondary, lineHeight: 1.7, fontFamily: "'Space Grotesk', sans-serif", display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div><span style={{ color: '#2ECC9A', fontWeight: 600 }}>{revision}</span> is underway for <span style={{ color: th.textPrimary }}>{clientName}</span>.</div>
+                <div><span style={{ color: th.textPrimary }}>No safety events recorded this shift.</span></div>
+                <div>You are currently <span style={{ color: deficitColor, fontWeight: 600 }}>{deficitPositive ? `${deficitHours.toFixed(1)} hrs behind` : deficitHours < 0 ? `${Math.abs(deficitHours).toFixed(1)} hrs ahead of` : 'on'}</span> planned schedule. Review the S-Curve below and use AI recommendations to reflow your schedule before entering the dashboard.</div>
               </div>
             </div>
             <div style={{ opacity: 0.35, display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 16 }}>
-              {['T-005 SAG Mill delay impacting 3 downstream tasks — recommend pulling T-008 forward to Day 5.', 'Linkforce T2 overallocated Days 3–4. Consider redistributing 2 tasks to T3.', 'At current pace, final commissioning at risk by 14 hours. Schedule compression recommended.'].map((txt, i) => (
+              {['Safety integration not yet active — connect your safety platform to enable live event reporting.', 'T-005 SAG Mill delay impacting 3 downstream tasks — recommend pulling T-008 forward to Day 5.', 'Linkforce T2 overallocated Days 3–4. Consider redistributing 2 tasks to T3.', 'At current pace, final commissioning at risk by 14 hours. Schedule compression recommended.'].map((txt, i) => (
                 <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 10, color: th.textSecondary, lineHeight: 1.5, fontFamily: "'Space Grotesk', sans-serif" }}>
                   <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#2ECC9A', flexShrink: 0, marginTop: 5 }}></div>
                   {txt}
@@ -366,6 +368,26 @@ export default function Overview() {
               </button>
               <div style={{ fontSize: 9, color: th.textMuted, textAlign: 'center', marginTop: 6, letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: "'Space Grotesk', sans-serif" }}>Available once Execution Intelligence is active</div>
             </div>
+          </div>
+
+          {/* Safety */}
+          <div style={{ ...glassCard, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: 0.6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={th.textMuted} strokeWidth="1.5">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2ECC9A', boxShadow: '0 0 6px #2ECC9A', animation: 'pulse 2s infinite', flexShrink: 0 }}></div>
+                  <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: th.textPrimary }}>Safety</span>
+                  <span style={{ fontSize: 9, color: th.textMuted, letterSpacing: '0.1em', fontFamily: "'Space Grotesk', sans-serif" }}>COMING SOON</span>
+                </div>
+                <div style={{ fontSize: 10, color: th.textSecondary, fontFamily: "'Space Grotesk', sans-serif" }}>No safety events recorded this shift — safety integration coming soon.</div>
+              </div>
+            </div>
+            <button disabled style={{ flexShrink: 0, padding: '8px 14px', background: 'transparent', border: `1px solid ${th.border}`, borderRadius: 6, color: th.textMuted, fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'not-allowed' }}>
+              Not Active
+            </button>
           </div>
 
           {/* Stats + S-Curve */}
