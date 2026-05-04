@@ -141,6 +141,7 @@ export default function VendorSetup() {
   async function sendEmail() {
     if (!emailInput || !firstName) return;
     const link = getCombinedLink(firstName, emailModal?.role);
+    const client = localStorage.getItem('client') || '';
 
     const { data: shutdownData } = await supabase
       .from('shutdowns')
@@ -158,6 +159,12 @@ export default function VendorSetup() {
         shutdown_id: shutdownData.id,
       }, { onConflict: 'name,shutdown_id' });
     }
+
+    await fetch('/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: firstName, email: emailInput, role: emailModal?.role || '', link, client }),
+    });
 
     setSentFlash(`✓ Link sent to ${firstName} — ${emailInput}`);
     setTimeout(() => setSentFlash(null), 3000);
