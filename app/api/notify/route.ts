@@ -23,9 +23,11 @@ export async function POST(req: NextRequest) {
       }
     };
 
+    const fullUrl = url ? `${url}&taskId=${taskId}&opIndex=${opIndex}` : url;
+
     await webpush.sendNotification(
       pushSubscription,
-      JSON.stringify({ title, body, url, taskId, opIndex, shutdownId })
+      JSON.stringify({ title, body, url: fullUrl, taskId, opIndex, shutdownId })
     );
 
     return NextResponse.json({ success: true });

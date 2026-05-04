@@ -37,6 +37,8 @@ function VendorField() {
   const rawName = searchParams.get('name') || '';
   const rawRole = searchParams.get('role') || '';
   const rawClient = decodeURIComponent(searchParams.get('client') || '');
+  const focusTaskId = searchParams.get('taskId') || '';
+  const focusOpIndex = searchParams.get('opIndex') !== null ? parseInt(searchParams.get('opIndex')!, 10) : -1;
 
   useEffect(() => {
     if (rawName) setCookie('supervisor_name', rawName);
@@ -67,9 +69,11 @@ function VendorField() {
     return true;
   });
   const [notifModalDismissed, setNotifModalDismissed] = useState(false);
+  const [highlightedOpKey, setHighlightedOpKey] = useState<string | null>(null);
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const lastTapTimes = useRef<Record<string, number>>({});
+  const taskRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
     async function loadTasks() {
@@ -110,6 +114,18 @@ function VendorField() {
       });
       setUpdates(initialUpdates);
       setLoading(false);
+
+      if (focusTaskId) {
+        setExpanded(prev => prev.includes(focusTaskId) ? prev : [...prev, focusTaskId]);
+        if (focusOpIndex >= 0) {
+          const opKey = `${focusTaskId}-op-${focusOpIndex}`;
+          setHighlightedOpKey(opKey);
+          setTimeout(() => setHighlightedOpKey(null), 2500);
+        }
+        setTimeout(() => {
+          taskRefs.current[focusTaskId]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
+      }
     }
 
     loadTasks();
@@ -279,6 +295,7 @@ function VendorField() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: ${th.bg}; }
         @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes opHighlight { 0%{background:rgba(46,204,154,0)} 15%{background:rgba(46,204,154,0.18)} 80%{background:rgba(46,204,154,0.10)} 100%{background:rgba(46,204,154,0)} }
         .qb-btn { background: transparent; border: none; padding: 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 52px; }
         .qb-circ { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; transition: all 0.2s; }
         .qb-btn:active .qb-circ, .qb-btn:hover .qb-circ { border-color: #2ECC9A !important; background: rgba(46,204,154,0.1) !important; color: #2ECC9A !important; }
@@ -478,7 +495,7 @@ function VendorField() {
                 const progressColor = woUpdate.status === 'DELAYED' ? '#E05A5A' : progress === 100 ? '#2ECC9A' : progress > 0 ? '#4A9EE0' : th.textMuted;
 
                 return (
-                  <div key={task.id} style={{ background: th.surface, border: `1px solid ${isSubmitted ? '#2ECC9A' : th.border}`, borderRadius: 12, overflow: 'hidden', animation: 'fadeIn 0.3s ease', transition: 'border-color 0.3s' }}>
+                  <div key={task.id} ref={el => { taskRefs.current[task.id] = el; }} style={{ background: th.surface, border: `1px solid ${isSubmitted ? '#2ECC9A' : th.border}`, borderRadius: 12, overflow: 'hidden', animation: 'fadeIn 0.3s ease', transition: 'border-color 0.3s' }}>
                     <div onClick={() => toggleExpand(woKey)} style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 12 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -513,7 +530,7 @@ function VendorField() {
                               const opColor = opUpdate.status === 'DELAYED' ? '#E05A5A' : opProgress === 100 ? '#2ECC9A' : opProgress > 0 ? '#4A9EE0' : th.textMuted;
 
                               return (
-                                <div key={opKey} style={{ padding: '12px 16px', borderBottom: oi < task.ops.length - 1 ? `1px solid ${th.surface2}` : 'none' }}>
+                                <div key={opKey} style={{ padding: '12px 16px', borderBottom: oi < task.ops.length - 1 ? `1px solid ${th.surface2}` : 'none', animation: highlightedOpKey === opKey ? 'opHighlight 2.5s ease' : 'none', borderRadius: highlightedOpKey === opKey ? 6 : 0 }}>
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
