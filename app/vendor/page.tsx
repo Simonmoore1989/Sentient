@@ -123,8 +123,8 @@ function VendorField() {
           setTimeout(() => setHighlightedOpKey(null), 2500);
         }
         setTimeout(() => {
-          taskRefs.current[focusTaskId]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 300);
+          document.getElementById(focusTaskId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 500);
       }
     }
 
@@ -495,7 +495,7 @@ function VendorField() {
                 const progressColor = woUpdate.status === 'DELAYED' ? '#E05A5A' : progress === 100 ? '#2ECC9A' : progress > 0 ? '#4A9EE0' : th.textMuted;
 
                 return (
-                  <div key={task.id} ref={el => { taskRefs.current[task.id] = el; }} style={{ background: th.surface, border: `1px solid ${isSubmitted ? '#2ECC9A' : th.border}`, borderRadius: 12, overflow: 'hidden', animation: 'fadeIn 0.3s ease', transition: 'border-color 0.3s' }}>
+                  <div key={task.id} id={task.id} ref={el => { taskRefs.current[task.id] = el; }} style={{ background: th.surface, border: `1px solid ${isSubmitted ? '#2ECC9A' : th.border}`, borderRadius: 12, overflow: 'hidden', animation: 'fadeIn 0.3s ease', transition: 'border-color 0.3s' }}>
                     <div onClick={() => toggleExpand(woKey)} style={{ padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: 12 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
