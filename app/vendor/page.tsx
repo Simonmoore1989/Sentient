@@ -70,6 +70,9 @@ function VendorField() {
   });
   const [notifModalDismissed, setNotifModalDismissed] = useState(false);
   const [highlightedOpKey, setHighlightedOpKey] = useState<string | null>(null);
+  const [shutdownId, setShutdownId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [loadingDoc, setLoadingDoc] = useState<string | null>(null);
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const lastTapTimes = useRef<Record<string, number>>({});
@@ -87,6 +90,7 @@ function VendorField() {
       let allTasks: any[] = [];
 
       if (shutdownData) {
+        setShutdownId(shutdownData.id);
         const { data: supabaseTasks } = await supabase
           .from('tasks')
           .select('*')
@@ -171,6 +175,42 @@ function VendorField() {
       })();
     }
   }, []);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  }
+
+  async function openDoc(slug: string) {
+    if (!shutdownId) {
+      showToast('Not yet available');
+      return;
+    }
+    setLoadingDoc(slug);
+    try {
+      const { data: files } = await supabase.storage
+        .from('shutdown-docs')
+        .list(`${shutdownId}/${slug}`);
+
+      if (!files || files.length === 0) {
+        showToast('Not yet available');
+        return;
+      }
+
+      const filename = files[0].name;
+      const { data: urlData } = await supabase.storage
+        .from('shutdown-docs')
+        .createSignedUrl(`${shutdownId}/${slug}/${filename}`, 3600);
+
+      if (urlData?.signedUrl) {
+        window.open(urlData.signedUrl, '_blank');
+      } else {
+        showToast('Not yet available');
+      }
+    } finally {
+      setLoadingDoc(null);
+    }
+  }
 
   function getGreeting() {
     const hour = new Date().getHours();
@@ -359,6 +399,12 @@ function VendorField() {
         </div>
       )}
 
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)', background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '10px 18px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, fontWeight: 500, color: th.textPrimary, zIndex: 99999, boxShadow: '0 8px 32px rgba(0,0,0,0.35)', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
+          {toast}
+        </div>
+      )}
+
       <div style={{ minHeight: '100vh', background: th.bg, fontFamily: "'Space Grotesk', sans-serif", color: th.textPrimary, paddingBottom: 40 }} onClick={() => setMenuOpen(false)}>
 
         {/* Header */}
@@ -437,9 +483,9 @@ function VendorField() {
               <button
                 key={item.label}
                 className="qb-btn"
-                onClick={(e) => { e.stopPropagation(); router.push(`/vendor/info/${item.slug}`); }}
+                onClick={(e) => { e.stopPropagation(); openDoc(item.slug); }}
               >
-                <div className="qb-circ" style={{ background: th.surface2, border: `1px solid ${th.border}`, color: th.textSecondary }}>
+                <div className="qb-circ" style={{ background: loadingDoc === item.slug ? 'rgba(46,204,154,0.1)' : th.surface2, border: `1px solid ${loadingDoc === item.slug ? '#2ECC9A' : th.border}`, color: loadingDoc === item.slug ? '#2ECC9A' : th.textSecondary }}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     {item.icon}
                   </svg>

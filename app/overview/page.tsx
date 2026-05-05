@@ -239,6 +239,7 @@ export default function Overview() {
     { label: 'Dashboard', path: '/dashboard', icon: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z' },
     { label: 'Reports', path: '/reports', icon: 'M22 12h-4l-3 9L9 3l-3 9H2' },
     { label: 'Vendor Setup', path: '/vendor-setup', icon: 'M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71' },
+    { label: 'Shutdown Info', path: '/shutdown-info', icon: 'M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z' },
     { label: 'New Schedule', path: '/', icon: 'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12' },
   ];
 
@@ -319,7 +320,7 @@ export default function Overview() {
           </div>
 
           {/* Nav Tiles */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
             {navTiles.map(tile => (
               <button
                 key={tile.label}
