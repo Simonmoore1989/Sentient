@@ -188,21 +188,29 @@ function VendorField() {
     }
     setLoadingDoc(slug);
     try {
-      const { data, error } = await supabase
+      // Try DB first
+      const { data } = await supabase
         .from('shutdown_documents')
         .select('file_url')
         .eq('shutdown_id', shutdownId)
         .eq('category', slug)
         .maybeSingle();
 
-      if (error) {
-        console.error('shutdown_documents fetch error:', error.message);
-        showToast('Not yet available');
+      if (data?.file_url) {
+        window.open(data.file_url, '_blank');
         return;
       }
 
-      if (data?.file_url) {
-        window.open(data.file_url, '_blank');
+      // Fall back: list the storage folder and build public URL directly
+      const { data: files } = await supabase.storage
+        .from('shutdown-docs')
+        .list(`${shutdownId}/${slug}`);
+
+      if (files && files.length > 0) {
+        const { data: urlData } = supabase.storage
+          .from('shutdown-docs')
+          .getPublicUrl(`${shutdownId}/${slug}/${files[0].name}`);
+        window.open(urlData.publicUrl, '_blank');
       } else {
         showToast('Not yet available');
       }

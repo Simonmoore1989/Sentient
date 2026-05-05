@@ -97,18 +97,33 @@ export default function ShutdownInfo() {
   }
 
   async function checkUploaded(sid: string) {
-    const { data } = await supabase
+    // Try the DB table first
+    const { data, error } = await supabase
       .from('shutdown_documents')
       .select('category, file_name')
       .eq('shutdown_id', sid);
 
-    if (data) {
+    if (!error && data && data.length > 0) {
       const fileMap: Record<string, string> = {};
-      for (const row of data) {
-        fileMap[row.category] = row.file_name;
-      }
+      for (const row of data) fileMap[row.category] = row.file_name;
       setUploadedFiles(fileMap);
+      return;
     }
+
+    // Fall back: list storage folders directly
+    const results = await Promise.all(
+      CATEGORIES.map(async (cat) => {
+        const { data: files } = await supabase.storage
+          .from('shutdown-docs')
+          .list(`${sid}/${cat.slug}`);
+        return { slug: cat.slug, file: files?.[0] ?? null };
+      })
+    );
+    const fileMap: Record<string, string> = {};
+    for (const r of results) {
+      if (r.file) fileMap[r.slug] = r.file.name;
+    }
+    setUploadedFiles(fileMap);
   }
 
   async function handleUpload(slug: string, file: File) {
@@ -137,23 +152,15 @@ export default function ShutdownInfo() {
 
       const fileUrl = urlData.publicUrl;
 
-      // Delete any existing record for this category then insert fresh —
-      // avoids needing a DB-level unique constraint for upsert to work.
-      await supabase
-        .from('shutdown_documents')
-        .delete()
-        .eq('shutdown_id', shutdownId)
-        .eq('category', slug);
-
+      // Best-effort DB write — don't block the UI on it
+      await supabase.from('shutdown_documents').delete()
+        .eq('shutdown_id', shutdownId).eq('category', slug);
       const { error: dbError } = await supabase
         .from('shutdown_documents')
         .insert({ shutdown_id: shutdownId, category: slug, file_url: fileUrl, file_name: file.name });
+      if (dbError) console.warn('shutdown_documents insert failed:', dbError.message);
 
-      if (dbError) {
-        console.error('DB insert error:', dbError.message);
-        return;
-      }
-
+      // UI always updates after a successful storage upload
       setUploadedFiles(prev => ({ ...prev, [slug]: file.name }));
     } finally {
       setUploading(prev => ({ ...prev, [slug]: false }));
