@@ -127,7 +127,7 @@ export default function ShutdownInfo() {
         });
 
       if (uploadError) {
-        console.error('Storage upload error:', uploadError);
+        console.error('Storage upload error:', uploadError.message);
         return;
       }
 
@@ -137,15 +137,20 @@ export default function ShutdownInfo() {
 
       const fileUrl = urlData.publicUrl;
 
+      // Delete any existing record for this category then insert fresh —
+      // avoids needing a DB-level unique constraint for upsert to work.
+      await supabase
+        .from('shutdown_documents')
+        .delete()
+        .eq('shutdown_id', shutdownId)
+        .eq('category', slug);
+
       const { error: dbError } = await supabase
         .from('shutdown_documents')
-        .upsert(
-          { shutdown_id: shutdownId, category: slug, file_url: fileUrl, file_name: file.name },
-          { onConflict: 'shutdown_id,category' }
-        );
+        .insert({ shutdown_id: shutdownId, category: slug, file_url: fileUrl, file_name: file.name });
 
       if (dbError) {
-        console.error('DB upsert error:', dbError);
+        console.error('DB insert error:', dbError.message);
         return;
       }
 

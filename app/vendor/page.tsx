@@ -188,12 +188,18 @@ function VendorField() {
     }
     setLoadingDoc(slug);
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('shutdown_documents')
         .select('file_url')
         .eq('shutdown_id', shutdownId)
         .eq('category', slug)
-        .single();
+        .maybeSingle();
+
+      if (error) {
+        console.error('shutdown_documents fetch error:', error.message);
+        showToast('Not yet available');
+        return;
+      }
 
       if (data?.file_url) {
         window.open(data.file_url, '_blank');
