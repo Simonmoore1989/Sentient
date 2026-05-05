@@ -186,6 +186,11 @@ function VendorField() {
       showToast('Not yet available');
       return;
     }
+
+    // Must call window.open synchronously while the user gesture is active —
+    // mobile browsers block it if called after any await.
+    const newTab = window.open('', '_blank');
+
     setLoadingDoc(slug);
     try {
       // Try DB first
@@ -197,11 +202,12 @@ function VendorField() {
         .maybeSingle();
 
       if (data?.file_url) {
-        window.open(data.file_url, '_blank');
+        if (newTab) newTab.location.href = data.file_url;
+        else window.location.href = data.file_url;
         return;
       }
 
-      // Fall back: list the storage folder and build public URL directly
+      // Fall back: list storage folder and build public URL directly
       const { data: files } = await supabase.storage
         .from('shutdown-docs')
         .list(`${shutdownId}/${slug}`);
@@ -210,8 +216,10 @@ function VendorField() {
         const { data: urlData } = supabase.storage
           .from('shutdown-docs')
           .getPublicUrl(`${shutdownId}/${slug}/${files[0].name}`);
-        window.open(urlData.publicUrl, '_blank');
+        if (newTab) newTab.location.href = urlData.publicUrl;
+        else window.location.href = urlData.publicUrl;
       } else {
+        if (newTab) newTab.close();
         showToast('Not yet available');
       }
     } finally {
