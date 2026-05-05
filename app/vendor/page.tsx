@@ -188,22 +188,15 @@ function VendorField() {
     }
     setLoadingDoc(slug);
     try {
-      const { data: files } = await supabase.storage
-        .from('shutdown-docs')
-        .list(`${shutdownId}/${slug}`);
+      const { data } = await supabase
+        .from('shutdown_documents')
+        .select('file_url')
+        .eq('shutdown_id', shutdownId)
+        .eq('category', slug)
+        .single();
 
-      if (!files || files.length === 0) {
-        showToast('Not yet available');
-        return;
-      }
-
-      const filename = files[0].name;
-      const { data: urlData } = await supabase.storage
-        .from('shutdown-docs')
-        .createSignedUrl(`${shutdownId}/${slug}/${filename}`, 3600);
-
-      if (urlData?.signedUrl) {
-        window.open(urlData.signedUrl, '_blank');
+      if (data?.file_url) {
+        window.open(data.file_url, '_blank');
       } else {
         showToast('Not yet available');
       }

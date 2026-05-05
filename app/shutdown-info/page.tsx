@@ -97,20 +97,18 @@ export default function ShutdownInfo() {
   }
 
   async function checkUploaded(sid: string) {
-    const results = await Promise.all(
-      CATEGORIES.map(async (cat) => {
-        const { data } = await supabase.storage
-          .from('shutdown-docs')
-          .list(`${sid}/${cat.slug}`);
-        return { slug: cat.slug, file: data?.[0] ?? null };
-      })
-    );
+    const { data } = await supabase
+      .from('shutdown_documents')
+      .select('category, file_name')
+      .eq('shutdown_id', sid);
 
-    const fileMap: Record<string, string> = {};
-    for (const r of results) {
-      if (r.file) fileMap[r.slug] = r.file.name;
+    if (data) {
+      const fileMap: Record<string, string> = {};
+      for (const row of data) {
+        fileMap[row.category] = row.file_name;
+      }
+      setUploadedFiles(fileMap);
     }
-    setUploadedFiles(fileMap);
   }
 
   async function handleUpload(slug: string, file: File) {
@@ -119,22 +117,39 @@ export default function ShutdownInfo() {
     setUploading(prev => ({ ...prev, [slug]: true }));
 
     try {
-      const existingName = uploadedFiles[slug];
-      if (existingName) {
-        await supabase.storage
-          .from('shutdown-docs')
-          .remove([`${shutdownId}/${slug}/${existingName}`]);
-      }
+      const storagePath = `${shutdownId}/${slug}/${file.name}`;
 
-      const { error } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('shutdown-docs')
-        .upload(`${shutdownId}/${slug}/${file.name}`, file, {
+        .upload(storagePath, file, {
           contentType: file.type,
+          upsert: true,
         });
 
-      if (!error) {
-        setUploadedFiles(prev => ({ ...prev, [slug]: file.name }));
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        return;
       }
+
+      const { data: urlData } = supabase.storage
+        .from('shutdown-docs')
+        .getPublicUrl(storagePath);
+
+      const fileUrl = urlData.publicUrl;
+
+      const { error: dbError } = await supabase
+        .from('shutdown_documents')
+        .upsert(
+          { shutdown_id: shutdownId, category: slug, file_url: fileUrl, file_name: file.name },
+          { onConflict: 'shutdown_id,category' }
+        );
+
+      if (dbError) {
+        console.error('DB upsert error:', dbError);
+        return;
+      }
+
+      setUploadedFiles(prev => ({ ...prev, [slug]: file.name }));
     } finally {
       setUploading(prev => ({ ...prev, [slug]: false }));
     }
