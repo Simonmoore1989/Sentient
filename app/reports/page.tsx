@@ -202,10 +202,10 @@ ${revision} | ${clientName} | ${shiftDate} ${shiftTime}`;
                   </div>
                 ))}
                 <div style={{ height: 1, background: th.border, margin: '4px 0' }}></div>
-                <div className="menu-item menu-item-danger" onClick={() => router.push('/')}
+                <div className="menu-item menu-item-danger" onClick={async () => { await supabase.auth.signOut(); router.push('/login'); }}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 5, fontFamily: "'Syne', sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#E05A5A', cursor: 'pointer' }}>
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
-                  New Session
+                  Sign Out
                 </div>
                 <div style={{ height: 1, background: th.border, margin: '4px 0' }}></div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px' }} onClick={e => e.stopPropagation()}>

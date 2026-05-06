@@ -229,8 +229,8 @@ export default function ShutdownInfo() {
                 <div style={{ position: 'absolute', top: 2, left: darkMode ? 2 : 16, width: 14, height: 14, borderRadius: '50%', background: darkMode ? th.textMuted : '#2ECC9A', transition: 'all 0.3s' }}></div>
               </div>
             </div>
-            <button onClick={() => router.push('/')} style={{ padding: '7px 14px', background: 'transparent', border: `1px solid rgba(224,90,90,0.3)`, borderRadius: 6, color: '#E05A5A', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
-              New Session
+            <button onClick={async () => { await supabase.auth.signOut(); router.push('/login'); }} style={{ padding: '7px 14px', background: 'transparent', border: `1px solid rgba(224,90,90,0.3)`, borderRadius: 6, color: '#E05A5A', fontFamily: "'Space Grotesk', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
+              Sign Out
             </button>
           </div>
         </header>

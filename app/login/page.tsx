@@ -1,11 +1,14 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '../../lib/supabase';
 
 export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const th = {
     bg: '#080C0F', surface: '#0E1419', surface2: '#141B22',
@@ -57,7 +60,7 @@ export default function Login() {
               type="email"
               placeholder="you@company.com"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={e => { setEmail(e.target.value); setError(''); }}
               style={{ background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 13, fontWeight: 300, color: th.textPrimary, width: '100%', letterSpacing: '0.04em' }}
             />
           </div>
@@ -68,15 +71,32 @@ export default function Login() {
               type="password"
               placeholder="••••••••"
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={e => { setPassword(e.target.value); setError(''); }}
               style={{ background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '12px 14px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 13, fontWeight: 300, color: th.textPrimary, width: '100%', letterSpacing: '0.04em' }}
             />
           </div>
 
+          {error && (
+            <div style={{ fontSize: 11, color: '#E05A5A', fontFamily: "'Space Grotesk', sans-serif", letterSpacing: '0.04em', textAlign: 'center' }}>
+              {error}
+            </div>
+          )}
+
           <button
-            onClick={() => router.push('/')}
-            style={{ width: '100%', padding: 14, background: '#2ECC9A', border: 'none', borderRadius: 10, color: '#040D0A', fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', cursor: 'pointer', marginTop: 4 }}>
-            Sign In
+            onClick={async () => {
+              setError('');
+              setLoading(true);
+              const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+              setLoading(false);
+              if (authError || !data.session) {
+                setError('Invalid email or password');
+              } else {
+                router.push('/overview');
+              }
+            }}
+            disabled={loading}
+            style={{ width: '100%', padding: 14, background: loading ? 'rgba(46,204,154,0.5)' : '#2ECC9A', border: 'none', borderRadius: 10, color: '#040D0A', fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', cursor: loading ? 'not-allowed' : 'pointer', marginTop: 4 }}>
+            {loading ? 'Signing In...' : 'Sign In'}
           </button>
 
           <div style={{ height: 1, background: th.border }}></div>
