@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,29 +14,40 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          response = NextResponse.next({ request });
+          // Write updated cookies back into the request so subsequent reads see them
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
+            request.cookies.set(name, value, options)
+          );
+          // Rebuild the response so the browser receives the refreshed cookies
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
           );
         },
       },
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // getUser() validates the JWT with Supabase — must stay here, do not move
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
 
+  // Public routes — allow through unauthenticated
   if (pathname === '/login' || pathname.startsWith('/vendor')) {
-    return response;
+    return supabaseResponse;
   }
 
+  // Unauthenticated access to any other route → /login
   if (!user) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = '/login';
+    return NextResponse.redirect(loginUrl);
   }
 
-  return response;
+  return supabaseResponse;
 }
 
 export const config = {
