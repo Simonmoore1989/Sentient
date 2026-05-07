@@ -36,29 +36,43 @@ export default function Admin() {
   useEffect(() => {
     const saved = localStorage.getItem('darkMode');
     if (saved !== null) setDarkMode(saved === 'true');
-    checkAuthAndLoad();
+
+    async function init() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user || user.email !== ADMIN_EMAIL) {
+          router.replace('/login');
+          return;
+        }
+        await Promise.allSettled([loadUsers(), loadShutdowns()]);
+      } catch {
+        router.replace('/login');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    init();
   }, []);
 
-  async function checkAuthAndLoad() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || user.email !== ADMIN_EMAIL) {
-      router.replace('/login');
-      return;
-    }
-    await Promise.all([loadUsers(), loadShutdowns()]);
-    setLoading(false);
-  }
-
   async function loadUsers() {
-    const res = await fetch('/api/admin?type=users');
-    const json = await res.json();
-    if (json.users) setUsers(json.users);
+    try {
+      const res = await fetch('/api/admin?type=users');
+      const json = await res.json();
+      if (json.users) setUsers(json.users);
+    } catch (err) {
+      console.error('loadUsers:', err);
+    }
   }
 
   async function loadShutdowns() {
-    const res = await fetch('/api/admin?type=shutdowns');
-    const json = await res.json();
-    if (json.shutdowns) setShutdowns(json.shutdowns);
+    try {
+      const res = await fetch('/api/admin?type=shutdowns');
+      const json = await res.json();
+      if (json.shutdowns) setShutdowns(json.shutdowns);
+    } catch (err) {
+      console.error('loadShutdowns:', err);
+    }
   }
 
   async function handleCreateUser() {
