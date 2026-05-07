@@ -7,7 +7,7 @@ const ADMIN_EMAIL = 'flooklimited@outlook.com';
 
 type AuthUser = {
   id: string;
-  email: string;
+  email: string | null | undefined;
   created_at: string;
   last_sign_in_at: string | null;
 };
@@ -135,8 +135,11 @@ export default function Admin() {
       ' ' + d.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
   }
 
-  function getUserEmail(userId: string) {
-    return users.find(u => u.id === userId)?.email ?? userId.slice(0, 8) + '...';
+  function getUserEmail(userId: string | null | undefined) {
+    if (!userId) return '—';
+    const email = users.find(u => u.id === userId)?.email;
+    if (email) return email;
+    return userId.slice(0, 8) + '...';
   }
 
   const th = darkMode ? {
@@ -316,12 +319,12 @@ export default function Admin() {
                   <div key={user.id} className="row-hover"
                     style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 80px', padding: '14px 20px', borderBottom: `1px solid ${th.border}`, alignItems: 'center', transition: 'background 0.15s' }}>
                     <div>
-                      <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, fontWeight: 500, color: th.textPrimary }}>{user.email}</div>
+                      <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, fontWeight: 500, color: th.textPrimary }}>{user.email ?? '—'}</div>
                       {user.email === ADMIN_EMAIL && (
                         <span style={{ fontSize: 8, color: '#2ECC9A', fontFamily: "'Syne', sans-serif", fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Admin</span>
                       )}
                     </div>
-                    <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, color: th.textSecondary }}>{fmtDate(user.created_at)}</div>
+                    <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, color: th.textSecondary }}>{fmtDate(user.created_at ?? null)}</div>
                     <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, color: th.textSecondary }}>{fmtDate(user.last_sign_in_at)}</div>
                     <div>
                       {user.email !== ADMIN_EMAIL && (
