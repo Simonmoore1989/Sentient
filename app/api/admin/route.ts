@@ -30,16 +30,25 @@ async function verifyAdmin(request: NextRequest): Promise<boolean> {
 }
 
 export async function GET(request: NextRequest) {
-  if (!(await verifyAdmin(request))) {
+  const isAdmin = await verifyAdmin(request);
+  console.log('[admin/route] verifyAdmin:', isAdmin);
+
+  if (!isAdmin) {
+    console.log('[admin/route] Unauthorized — session cookie may be missing or email mismatch');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const { searchParams } = new URL(request.url);
   const type = searchParams.get('type');
+
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  console.log('[admin/route] type:', type, '| service key set:', !!serviceKey && serviceKey !== 'your_service_role_key_here');
+
   const admin = adminClient();
 
   if (type === 'users') {
     const { data, error } = await admin.auth.admin.listUsers();
+    console.log('[admin/route] listUsers — count:', data?.users?.length ?? 0, '| error:', error?.message ?? null);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ users: data.users });
   }
@@ -49,6 +58,7 @@ export async function GET(request: NextRequest) {
       .from('shutdowns')
       .select('*')
       .order('created_at', { ascending: false });
+    console.log('[admin/route] shutdowns — count:', data?.length ?? 0, '| error:', error?.message ?? null);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ shutdowns: data });
   }

@@ -59,9 +59,16 @@ export default function Admin() {
     try {
       const res = await fetch('/api/admin?type=users');
       const json = await res.json();
-      if (json.users) setUsers(json.users);
+      console.log('[admin] loadUsers response:', json);
+      if (json.error) {
+        console.error('[admin] loadUsers error:', json.error);
+      }
+      if (json.users) {
+        console.log('[admin] users loaded:', json.users.length);
+        setUsers(json.users);
+      }
     } catch (err) {
-      console.error('loadUsers:', err);
+      console.error('[admin] loadUsers fetch failed:', err);
     }
   }
 
@@ -69,9 +76,16 @@ export default function Admin() {
     try {
       const res = await fetch('/api/admin?type=shutdowns');
       const json = await res.json();
-      if (json.shutdowns) setShutdowns(json.shutdowns);
+      console.log('[admin] loadShutdowns response:', json);
+      if (json.error) {
+        console.error('[admin] loadShutdowns error:', json.error);
+      }
+      if (json.shutdowns) {
+        console.log('[admin] shutdowns loaded:', json.shutdowns.length);
+        setShutdowns(json.shutdowns);
+      }
     } catch (err) {
-      console.error('loadShutdowns:', err);
+      console.error('[admin] loadShutdowns fetch failed:', err);
     }
   }
 
