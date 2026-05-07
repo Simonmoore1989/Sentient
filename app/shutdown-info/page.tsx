@@ -83,9 +83,12 @@ export default function ShutdownInfo() {
   }, []);
 
   async function loadShutdown() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     const { data } = await supabase
       .from('shutdowns')
       .select('id')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
       .single();

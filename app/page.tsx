@@ -287,9 +287,10 @@ export default function Home() {
 
                       localStorage.setItem('tasks', JSON.stringify(tasks));
 
+                      const { data: { user } } = await supabase.auth.getUser();
                       const { data: shutdown } = await supabase
                         .from('shutdowns')
-                        .insert({ client, revision })
+                        .insert({ client, revision, user_id: user?.id })
                         .select()
                         .single();
 

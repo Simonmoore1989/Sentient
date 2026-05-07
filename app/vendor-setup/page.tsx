@@ -35,9 +35,12 @@ export default function VendorSetup() {
   }, []);
 
   async function loadVendors() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     const { data: shutdownData } = await supabase
       .from('shutdowns')
       .select('id')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
@@ -143,9 +146,11 @@ export default function VendorSetup() {
     const link = getCombinedLink(firstName, emailModal?.role);
     const client = localStorage.getItem('client') || '';
 
+    const { data: { user } } = await supabase.auth.getUser();
     const { data: shutdownData } = await supabase
       .from('shutdowns')
       .select('id')
+      .eq('user_id', user?.id)
       .order('created_at', { ascending: false })
       .limit(1)
       .single();

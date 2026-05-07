@@ -21,9 +21,12 @@ export default function Reports() {
   }, []);
 
   async function loadTasks() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     const { data: shutdownData } = await supabase
       .from('shutdowns')
       .select('id')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
       .single();

@@ -40,9 +40,12 @@ export default function Overview() {
 
   useEffect(() => {
     async function loadTasks() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
       const { data: shutdown } = await supabase
         .from('shutdowns')
         .select('id')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
