@@ -15,8 +15,8 @@ export async function middleware(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           // Write updated cookies back into the request so subsequent reads see them
-          cookiesToSet.forEach(({ name, value, options }) =>
-            request.cookies.set(name, value, options)
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
           );
           // Rebuild the response so the browser receives the refreshed cookies
           supabaseResponse = NextResponse.next({ request });
