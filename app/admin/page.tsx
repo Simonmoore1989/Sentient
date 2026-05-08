@@ -45,10 +45,9 @@ export default function Admin() {
           return;
         }
         await Promise.allSettled([loadUsers(), loadShutdowns()]);
+        setLoading(false);
       } catch {
         router.replace('/login');
-      } finally {
-        setLoading(false);
       }
     }
 
