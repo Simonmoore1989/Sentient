@@ -211,6 +211,7 @@ export default function Home() {
                         duration: headers.findIndex(h => h.toLowerCase().includes('duration')),
                         crew: headers.findIndex(h => h.toLowerCase().includes('crew')),
                         complete: headers.findIndex(h => h.toLowerCase().includes('complete')),
+                        critical: headers.findIndex(h => h.toLowerCase() === 'critical'),
                       };
 
                       const rawRows = lines.slice(1).map(line => {
@@ -224,6 +225,7 @@ export default function Home() {
                           duration: idx.duration >= 0 ? cols[idx.duration] : '',
                           crew: idx.crew >= 0 ? cols[idx.crew] : '',
                           complete: idx.complete >= 0 ? cols[idx.complete] : '0',
+                          critical: idx.critical >= 0 ? cols[idx.critical] : '',
                         };
                       }).filter(r => r.wo && r.name);
 
@@ -232,6 +234,7 @@ export default function Home() {
 
                       rawRows.forEach(row => {
                         const isParent = !row.op || row.op === '';
+                        const isCritical = (v: string) => v === 'Yes' || v === 'TRUE';
                         if (isParent) {
                           if (!woMap[row.wo]) {
                             woOrder.push(row.wo);
@@ -243,8 +246,11 @@ export default function Home() {
                               duration: row.duration,
                               crew: row.crew,
                               complete: parseFloat(row.complete) || 0,
+                              critical: isCritical(row.critical),
                               ops: [],
                             };
+                          } else {
+                            woMap[row.wo].critical = isCritical(row.critical);
                           }
                         } else {
                           if (!woMap[row.wo]) {
@@ -257,6 +263,7 @@ export default function Home() {
                               duration: row.duration,
                               crew: row.crew,
                               complete: 0,
+                              critical: isCritical(row.critical),
                               ops: [],
                             };
                           }
@@ -286,6 +293,7 @@ export default function Home() {
                           team: w.crew,
                           progress,
                           status,
+                          critical: w.critical || false,
                           ops: w.ops,
                         };
                       });

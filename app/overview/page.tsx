@@ -119,7 +119,7 @@ export default function Overview() {
     'COMPLETE':    { label: 'Complete',     color: '#2ECC9A', bg: 'rgba(46,204,154,0.12)' },
   };
   const criticalTasks = [...tasks]
-    .filter(t => t.status !== 'COMPLETE')
+    .filter(t => t.critical === true && t.status !== 'COMPLETE')
     .sort((a, b) => {
       const sp = statusPriority(a.status) - statusPriority(b.status);
       return sp !== 0 ? sp : parseDuration(b.duration) - parseDuration(a.duration);
