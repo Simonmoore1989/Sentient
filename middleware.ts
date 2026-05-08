@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public routes — allow through unauthenticated
-  if (pathname === '/login' || pathname.startsWith('/vendor')) {
+  if (pathname === '/login' || pathname === '/admin/login' || pathname.startsWith('/vendor')) {
     return supabaseResponse;
   }
 
