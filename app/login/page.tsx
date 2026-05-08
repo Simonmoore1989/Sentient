@@ -91,7 +91,7 @@ export default function Login() {
               if (authError || !data.session) {
                 setError('Invalid email or password');
               } else {
-                router.push('/overview');
+                router.push('/');
               }
             }}
             disabled={loading}
