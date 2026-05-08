@@ -158,6 +158,7 @@ export default function Home() {
                         { col: 'Duration',         desc: 'Task duration' },
                         { col: 'Crew',             desc: 'Team or resource group name' },
                         { col: 'Complete',         desc: 'Percentage complete (0–100)' },
+                        { col: 'Critical',         desc: 'Whether the task is on the critical path (Yes/No) — calculated automatically by MS Project' },
                       ].map(({ col, desc }) => (
                         <div key={col} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
                           <span style={{ fontSize: 8, color: '#2ECC9A', flexShrink: 0 }}>•</span>
