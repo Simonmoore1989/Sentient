@@ -112,13 +112,25 @@ export default function Admin() {
   async function handleDeleteUser(userId: string) {
     if (!confirm('Delete this user and all their data?')) return;
     setDeletingId(userId);
-    await fetch('/api/admin', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId }),
-    });
-    setDeletingId(null);
-    await loadUsers();
+    try {
+      const res = await fetch('/api/admin', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        console.error('[admin] delete failed:', json.error);
+        alert(`Failed to delete user: ${json.error}`);
+      } else {
+        await Promise.allSettled([loadUsers(), loadShutdowns()]);
+      }
+    } catch (err) {
+      console.error('[admin] delete request failed:', err);
+      alert('Delete request failed — check console for details.');
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   function toggleDark() {

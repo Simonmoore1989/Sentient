@@ -88,8 +88,27 @@ export async function DELETE(request: NextRequest) {
   }
 
   const { userId } = await request.json();
+  console.log('[admin/route] DELETE user:', userId);
+
+  if (!userId) {
+    return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
+  }
+
   const admin = adminClient();
-  const { error } = await admin.auth.admin.deleteUser(userId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Delete tasks first, then shutdowns, then the auth user
+  const { error: tasksError } = await admin.from('tasks').delete().eq('user_id', userId);
+  if (tasksError) console.error('[admin/route] tasks delete error:', tasksError.message);
+
+  const { error: shutdownsError } = await admin.from('shutdowns').delete().eq('user_id', userId);
+  if (shutdownsError) console.error('[admin/route] shutdowns delete error:', shutdownsError.message);
+
+  const { error: authError } = await admin.auth.admin.deleteUser(userId);
+  if (authError) {
+    console.error('[admin/route] deleteUser error:', authError.message);
+    return NextResponse.json({ error: authError.message }, { status: 500 });
+  }
+
+  console.log('[admin/route] user deleted successfully:', userId);
   return NextResponse.json({ success: true });
 }
