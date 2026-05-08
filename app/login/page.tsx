@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { supabase } from '../../lib/supabase';
 
 export default function Login() {
@@ -111,9 +110,7 @@ export default function Login() {
           Sentient V0.1 — Shutdown Planning & Execution
         </div>
 
-        <Link href="/admin/login" style={{ marginTop: 20, fontSize: 9, color: '#2E4050', textDecoration: 'none', letterSpacing: '0.08em', fontFamily: "'Space Grotesk', sans-serif" }}>
-          Admin
-        </Link>
+        <a href="/admin/login" style={{ fontSize: 10, color: '#2E4050', textDecoration: 'none', letterSpacing: '0.1em', cursor: 'pointer' }}>Admin</a>
 
       </div>
     </>
