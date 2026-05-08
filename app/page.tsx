@@ -303,6 +303,7 @@ export default function Home() {
                           shutdown_id: shutdownId,
                           client,
                           revision,
+                          user_id: user?.id,
                           ops: t.ops || [],
                         }));
 
