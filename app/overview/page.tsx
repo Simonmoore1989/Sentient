@@ -110,6 +110,28 @@ export default function Overview() {
   const pendingCount = tasks.filter(t => t.status !== 'COMPLETE' && t.status !== 'IN PROGRESS' && t.status !== 'DELAYED').length;
   const pct = (n: number) => total > 0 ? `${Math.round(n / total * 100)}% of total` : '—';
 
+  // --- Critical path: DELAYED first, IN PROGRESS second, PENDING last; sorted by duration within each group ---
+  const statusPriority = (s: string) => s === 'DELAYED' ? 0 : s === 'IN PROGRESS' ? 1 : 2;
+  const parseDuration = (d: string) => parseFloat(d) || 0;
+  const statusStyle: Record<string, { label: string; color: string; bg: string }> = {
+    'DELAYED':     { label: 'Delayed',      color: '#E05A5A', bg: 'rgba(224,90,90,0.12)' },
+    'IN PROGRESS': { label: 'In Progress',  color: '#4A9EE0', bg: 'rgba(74,158,224,0.12)' },
+    'COMPLETE':    { label: 'Complete',     color: '#2ECC9A', bg: 'rgba(46,204,154,0.12)' },
+  };
+  const criticalTasks = [...tasks]
+    .filter(t => t.status !== 'COMPLETE')
+    .sort((a, b) => {
+      const sp = statusPriority(a.status) - statusPriority(b.status);
+      return sp !== 0 ? sp : parseDuration(b.duration) - parseDuration(a.duration);
+    })
+    .slice(0, 5)
+    .map(t => ({
+      id: t.wo || t.id,
+      name: t.name,
+      team: t.team || '—',
+      ...(statusStyle[t.status] ?? { label: 'Yet To Start', color: '#5A7080', bg: 'rgba(90,112,128,0.12)' }),
+    }));
+
   // --- Date labels and schedule deficit ---
   let startLabel = '—', endLabel = '—', deficitHours = 0;
   if (tasks.length > 0) {
@@ -460,19 +482,17 @@ export default function Overview() {
               <div style={{ width: 16, height: 1, background: '#2ECC9A' }}></div>
               Critical Path
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, height: 200 }}>
-              {[
-                { id: 'T-005', name: 'SAG Mill Liner Change', team: 'Linkforce T2', status: 'Delayed', color: '#E05A5A', bg: 'rgba(224,90,90,0.12)' },
-                { id: 'T-003', name: 'Main Drive Bearing Replacement', team: 'Linkforce T1', status: 'In Progress', color: '#4A9EE0', bg: 'rgba(74,158,224,0.12)' },
-                { id: 'T-012', name: 'Final Commissioning & Handover', team: 'Linkforce T3', status: 'Yet To Start', color: '#5A7080', bg: 'rgba(90,112,128,0.12)' },
-              ].map(t => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {criticalTasks.length === 0 ? (
+                <div style={{ fontSize: 11, color: th.textMuted, fontFamily: "'Space Grotesk', sans-serif", padding: '12px 0' }}>No active tasks</div>
+              ) : criticalTasks.map(t => (
                 <div key={t.id} className="glass-sheen" style={{ ...glassCard, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
                     <div style={{ fontSize: 9, color: th.textMuted, letterSpacing: '0.08em', fontFamily: "'Space Grotesk', sans-serif" }}>{t.id}</div>
                     <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 600, color: th.textPrimary, marginTop: 2 }}>{t.name}</div>
                     <div style={{ fontSize: 9, color: th.textMuted, marginTop: 2, fontFamily: "'Space Grotesk', sans-serif" }}>{t.team}</div>
                   </div>
-                  <div style={{ background: t.bg, color: t.color, fontFamily: "'Space Grotesk', sans-serif", fontSize: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 4 }}>{t.status}</div>
+                  <div style={{ background: t.bg, color: t.color, fontFamily: "'Space Grotesk', sans-serif", fontSize: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 4 }}>{t.label}</div>
                 </div>
               ))}
             </div>
