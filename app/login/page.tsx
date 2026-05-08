@@ -91,7 +91,12 @@ export default function Login() {
               if (authError || !data.session) {
                 setError('Invalid email or password');
               } else {
-                router.push('/');
+                const { data: shutdowns } = await supabase
+                  .from('shutdowns')
+                  .select('id')
+                  .eq('user_id', data.session.user.id)
+                  .limit(1);
+                router.push(shutdowns && shutdowns.length > 0 ? '/overview' : '/');
               }
             }}
             disabled={loading}
