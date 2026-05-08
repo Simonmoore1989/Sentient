@@ -76,7 +76,6 @@ export default function ShutdownInfo() {
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    setClientName(localStorage.getItem('client') || 'Client');
     const saved = localStorage.getItem('darkMode');
     if (saved !== null) setDarkMode(saved === 'true');
     loadShutdown();
@@ -87,13 +86,14 @@ export default function ShutdownInfo() {
     if (!user) return;
     const { data } = await supabase
       .from('shutdowns')
-      .select('id')
+      .select('id, client, revision')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
 
     if (data) {
+      setClientName(data.client || '');
       setShutdownId(data.id);
       checkUploaded(data.id);
     }

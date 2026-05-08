@@ -13,8 +13,6 @@ export default function Reports() {
   const [tasks, setTasks] = useState<any[]>([]);
 
   useEffect(() => {
-    setClientName(localStorage.getItem('client') || 'Client');
-    setRevision(localStorage.getItem('revision') || 'Revision');
     const saved = localStorage.getItem('darkMode');
     if (saved !== null) setDarkMode(saved === 'true');
     loadTasks();
@@ -25,13 +23,15 @@ export default function Reports() {
     if (!user) return;
     const { data: shutdownData } = await supabase
       .from('shutdowns')
-      .select('id')
+      .select('id, client, revision')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
 
     if (shutdownData) {
+      setClientName(shutdownData.client || '');
+      setRevision(shutdownData.revision || '');
       const { data: supabaseTasks } = await supabase
         .from('tasks')
         .select('*')

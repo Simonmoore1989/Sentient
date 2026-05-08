@@ -61,26 +61,23 @@ export default function Dashboard() {
     if (!user) return;
     const { data: shutdownData } = await supabase
       .from('shutdowns')
-      .select('id')
+      .select('id, client, revision')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
 
     if (shutdownData) {
+      setClientName(shutdownData.client || '');
       const { data: supabaseTasks } = await supabase
         .from('tasks')
         .select('*')
         .eq('shutdown_id', shutdownData.id);
       if (supabaseTasks) setTasks(supabaseTasks);
-    } else {
-      const storedTasks = localStorage.getItem('tasks');
-      if (storedTasks) setTasks(JSON.parse(storedTasks));
     }
   }
 
   useEffect(() => {
-    setClientName(localStorage.getItem('client') || 'Client');
     const saved = localStorage.getItem('darkMode');
     if (saved !== null) setDarkMode(saved === 'true');
     loadTasks();
