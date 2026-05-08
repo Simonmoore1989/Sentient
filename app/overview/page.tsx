@@ -14,6 +14,7 @@ type Task = {
   team: string;
   wo: string;
   shutdown_id: string;
+  critical: boolean;
 };
 
 function parseTaskDate(dateStr: string): Date | null {
