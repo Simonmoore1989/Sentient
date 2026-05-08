@@ -40,22 +40,34 @@ export default function Overview() {
 
   useEffect(() => {
     async function loadTasks() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      console.log('[overview] getUser:', user?.id ?? null, '| error:', userError?.message ?? null);
       if (!user) { router.replace('/login'); return; }
-      const { data: shutdown } = await supabase
+
+      const { data: shutdowns, error: shutdownError } = await supabase
         .from('shutdowns')
         .select('id, client, revision')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-      if (!shutdown) { router.replace('/'); return; }
+        .limit(1);
+      console.log('[overview] shutdowns query — user_id:', user.id, '| rows:', shutdowns?.length ?? 0, '| error:', shutdownError?.message ?? null, '| data:', shutdowns);
+
+      const shutdown = shutdowns?.[0] ?? null;
+      if (!shutdown) {
+        console.log('[overview] no shutdown found — redirecting to /');
+        router.replace('/');
+        return;
+      }
+
+      console.log('[overview] shutdown found:', shutdown.id, shutdown.client, shutdown.revision);
       setClientName(shutdown.client || '');
       setRevision(shutdown.revision || '');
-      const { data } = await supabase
+
+      const { data, error: tasksError } = await supabase
         .from('tasks')
         .select('*')
         .eq('shutdown_id', shutdown.id);
+      console.log('[overview] tasks — count:', data?.length ?? 0, '| error:', tasksError?.message ?? null);
       if (data) setTasks(data);
     }
     loadTasks();
