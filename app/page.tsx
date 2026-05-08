@@ -75,7 +75,7 @@ export default function Home() {
       <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'DM Mono', monospace", color: '#E8EDF2' }}>
 
         {/* Header */}
-        <header style={{ padding: '28px 40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #1E2A35' }}>
+        <header style={{ padding: '28px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1E2A35' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ width: 36, height: 36, border: '1.5px solid #2ECC9A', borderRadius: 7, display: 'grid', placeItems: 'center', background: 'rgba(46,204,154,0.1)' }}>
               <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#2ECC9A" strokeWidth="1.5">
@@ -88,6 +88,11 @@ export default function Home() {
               <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '10px', fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#2ECC9A', whiteSpace: 'nowrap', lineHeight: 1.2 }}>Execution Intelligence</span>
             </div>
           </div>
+          <button
+            onClick={async () => { await supabase.auth.signOut(); router.push('/login'); }}
+            style={{ padding: '7px 14px', background: 'transparent', border: '1px solid rgba(224,90,90,0.3)', borderRadius: 6, color: '#E05A5A', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
+            Sign Out
+          </button>
         </header>
 
         {/* Main */}
