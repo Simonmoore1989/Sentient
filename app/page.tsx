@@ -157,8 +157,10 @@ export default function Home() {
                         { col: 'Finish',           desc: 'Finish date/time' },
                         { col: 'Duration',         desc: 'Task duration' },
                         { col: 'Crew',             desc: 'Team or resource group name' },
-                        { col: 'Complete',         desc: 'Percentage complete (0–100)' },
+                        { col: 'Complete',         desc: 'Percentage complete (0-100)' },
                         { col: 'Critical',         desc: 'Whether the task is on the critical path (Yes/No) — calculated automatically by MS Project' },
+                        { col: 'Predecessors',     desc: 'Comma separated list of predecessor task IDs — from MS Project' },
+                        { col: 'Successors',       desc: 'Comma separated list of successor task IDs — from MS Project' },
                       ].map(({ col, desc }) => (
                         <div key={col} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
                           <span style={{ fontSize: 8, color: '#2ECC9A', flexShrink: 0 }}>•</span>
@@ -166,6 +168,10 @@ export default function Home() {
                           <span style={{ fontSize: 9, color: '#5A7080' }}>— {desc}</span>
                         </div>
                       ))}
+                      <div style={{ height: 1, background: '#1E2A35', margin: '6px 0' }} />
+                      <div style={{ fontSize: 9, color: '#5A7080', fontStyle: 'italic' }}>
+                        All columns are exported directly from Microsoft Project. Add Critical, Predecessors and Successors columns to your MS Project view before exporting.
+                      </div>
                     </div>
                     {/* Arrow */}
                     <div style={{ position: 'absolute', bottom: -7, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderTop: '7px solid rgba(46,204,154,0.3)' }} />
@@ -213,6 +219,8 @@ export default function Home() {
                         crew: headers.findIndex(h => h.toLowerCase().includes('crew')),
                         complete: headers.findIndex(h => h.toLowerCase().includes('complete')),
                         critical: headers.findIndex(h => h.toLowerCase() === 'critical'),
+                        predecessors: headers.findIndex(h => h.toLowerCase() === 'predecessors'),
+                        successors: headers.findIndex(h => h.toLowerCase() === 'successors'),
                       };
 
                       const rawRows = lines.slice(1).map(line => {
@@ -227,6 +235,8 @@ export default function Home() {
                           crew: idx.crew >= 0 ? cols[idx.crew] : '',
                           complete: idx.complete >= 0 ? cols[idx.complete] : '0',
                           critical: idx.critical >= 0 ? cols[idx.critical] : '',
+                          predecessors: idx.predecessors >= 0 ? cols[idx.predecessors] : '',
+                          successors: idx.successors >= 0 ? cols[idx.successors] : '',
                         };
                       }).filter(r => r.wo && r.name);
 
@@ -248,10 +258,14 @@ export default function Home() {
                               crew: row.crew,
                               complete: parseFloat(row.complete) || 0,
                               critical: isCritical(row.critical),
+                              predecessors: row.predecessors,
+                              successors: row.successors,
                               ops: [],
                             };
                           } else {
                             woMap[row.wo].critical = isCritical(row.critical);
+                            woMap[row.wo].predecessors = row.predecessors;
+                            woMap[row.wo].successors = row.successors;
                           }
                         } else {
                           if (!woMap[row.wo]) {
@@ -265,6 +279,8 @@ export default function Home() {
                               crew: row.crew,
                               complete: 0,
                               critical: isCritical(row.critical),
+                              predecessors: row.predecessors,
+                              successors: row.successors,
                               ops: [],
                             };
                           }
@@ -295,6 +311,8 @@ export default function Home() {
                           progress,
                           status,
                           critical: w.critical || false,
+                          predecessors: w.predecessors || '',
+                          successors: w.successors || '',
                           ops: w.ops,
                         };
                       });
