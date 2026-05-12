@@ -135,7 +135,7 @@ export default function Overview() {
 
   // --- Date labels and schedule deficit ---
   let startLabel = '—', endLabel = '—', deficitHours = 0;
-  let shutdownStart = '—', shutdownFinish = '—', shutdownDuration = '—', totalResourceHrsLabel = '—';
+  let shutdownStart = '—', shutdownFinish = '—', shutdownDuration = '—', totalPlannedHrsLabel = '—';
   if (tasks.length > 0) {
     const fmtMonth = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
     const fmt = (ms: number) => { const d = new Date(ms); return `${d.getDate()} ${fmtMonth[d.getMonth()]}`; };
@@ -172,8 +172,9 @@ export default function Overview() {
       deficitHours = totalHrs > 0 ? plannedHrs - actualHrs : 0;
     }
 
+    // Each task in this array is a parent WO row; ops are a nested JSON column and not summed here.
     const resourceHrs = tasks.reduce((sum, t) => sum + (parseDuration(t.duration) || 0), 0);
-    if (resourceHrs > 0) totalResourceHrsLabel = `${Math.round(resourceHrs).toLocaleString()} hrs`;
+    if (resourceHrs > 0) totalPlannedHrsLabel = `${Math.round(resourceHrs).toLocaleString()} hrs`;
   }
 
   // --- Canvas: S-curve with real data ---
@@ -362,7 +363,7 @@ export default function Overview() {
               <span>{revision.slice(0, -4)}</span><span style={{ color: '#2ECC9A' }}>{revision.slice(-4)}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
-              {[[shutdownStart, 'Start'], [shutdownFinish, 'Finish'], [shutdownDuration, 'Duration'], [totalResourceHrsLabel, 'Total Resource Hours']].map(([val, label]) => (
+              {[[shutdownStart, 'Start'], [shutdownFinish, 'Finish'], [shutdownDuration, 'Duration'], [totalPlannedHrsLabel, 'Total Planned Hours']].map(([val, label]) => (
                 <div key={label} style={{ fontSize: 10, color: th.textSecondary, letterSpacing: '0.05em', fontFamily: "'Space Grotesk', sans-serif" }}>
                   <strong style={{ color: th.textPrimary, fontWeight: 500 }}>{val}</strong>
                 </div>
