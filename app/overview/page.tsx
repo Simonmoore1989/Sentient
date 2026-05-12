@@ -135,9 +135,14 @@ export default function Overview() {
 
   // --- Date labels and schedule deficit ---
   let startLabel = '—', endLabel = '—', deficitHours = 0;
+  let shutdownStart = '—', shutdownFinish = '—', shutdownDuration = '—', totalResourceHrsLabel = '—';
   if (tasks.length > 0) {
     const fmtMonth = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
     const fmt = (ms: number) => { const d = new Date(ms); return `${d.getDate()} ${fmtMonth[d.getMonth()]}`; };
+    const fmtDT = (ms: number) => {
+      const d = new Date(ms);
+      return `${String(d.getDate()).padStart(2,'0')} ${fmtMonth[d.getMonth()]} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    };
 
     type Parsed = { s: number; e: number; dh: number; progress: number; status: string };
     const parsed: Parsed[] = tasks.flatMap(t => {
@@ -152,6 +157,9 @@ export default function Overview() {
       const maxMs = Math.max(...parsed.map(p => p.e));
       startLabel = fmt(minMs);
       endLabel = fmt(maxMs);
+      shutdownStart = fmtDT(minMs);
+      shutdownFinish = fmtDT(maxMs);
+      shutdownDuration = `${Math.round((maxMs - minMs) / 3600000)} hrs`;
 
       const totalHrs = parsed.reduce((sum, p) => sum + p.dh, 0);
       const now = Date.now();
@@ -163,6 +171,9 @@ export default function Overview() {
       const actualHrs = parsed.reduce((sum, p) => sum + p.dh * (p.progress / 100), 0);
       deficitHours = totalHrs > 0 ? plannedHrs - actualHrs : 0;
     }
+
+    const resourceHrs = tasks.reduce((sum, t) => sum + (parseDuration(t.duration) || 0), 0);
+    if (resourceHrs > 0) totalResourceHrsLabel = `${Math.round(resourceHrs).toLocaleString()} hrs`;
   }
 
   // --- Canvas: S-curve with real data ---
@@ -351,7 +362,7 @@ export default function Overview() {
               <span>{revision.slice(0, -4)}</span><span style={{ color: '#2ECC9A' }}>{revision.slice(-4)}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
-              {[['12 May 06:00', 'Start'], ['19 May 18:00', 'Finish'], ['168 hrs', 'Duration'], ['1,840 hrs', 'Total Resource Hours']].map(([val, label]) => (
+              {[[shutdownStart, 'Start'], [shutdownFinish, 'Finish'], [shutdownDuration, 'Duration'], [totalResourceHrsLabel, 'Total Resource Hours']].map(([val, label]) => (
                 <div key={label} style={{ fontSize: 10, color: th.textSecondary, letterSpacing: '0.05em', fontFamily: "'Space Grotesk', sans-serif" }}>
                   <strong style={{ color: th.textPrimary, fontWeight: 500 }}>{val}</strong>
                 </div>
