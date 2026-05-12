@@ -38,11 +38,9 @@ function calculateAutoDelay(op: any): number {
 }
 
 function isCritical(task: any, allTasks: any[]): boolean {
-  if (!task.end) return false;
-  return allTasks.some(other => {
-    if (other.id === task.id) return false;
-    return other.start === task.end;
-  });
+  if (task.critical === true) return true;
+  if (task.status === 'DELAYED' && task.successors && task.successors.trim() !== '') return true;
+  return false;
 }
 
 export default function Dashboard() {
