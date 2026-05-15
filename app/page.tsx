@@ -2,6 +2,7 @@
 import { supabase } from '../lib/supabase';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import SentientLogo from './components/SentientLogo';
 
 export default function Home() {
   const [client, setClient] = useState('');
@@ -76,18 +77,7 @@ export default function Home() {
 
         {/* Header */}
         <header style={{ padding: '28px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1E2A35' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: 36, height: 36, border: '1.5px solid #2ECC9A', borderRadius: 7, display: 'grid', placeItems: 'center', background: 'rgba(46,204,154,0.1)' }}>
-              <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#2ECC9A" strokeWidth="1.5">
-                <path d="M8 2L14 5.5V10.5L8 14L2 10.5V5.5L8 2Z"/>
-                <circle cx="8" cy="8" r="2" fill="#2ECC9A" stroke="none"/>
-              </svg>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1.1 }}>Sentient</span>
-              <span style={{ fontFamily: "'Syne', sans-serif", fontSize: '10px', fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#2ECC9A', whiteSpace: 'nowrap', lineHeight: 1.2 }}>Execution Intelligence</span>
-            </div>
-          </div>
+          <SentientLogo size="md" showTagline={true} />
           <button
             onClick={async () => { await supabase.auth.signOut(); router.push('/login'); }}
             style={{ padding: '7px 14px', background: 'transparent', border: '1px solid rgba(224,90,90,0.3)', borderRadius: 6, color: '#E05A5A', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>

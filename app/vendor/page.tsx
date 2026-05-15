@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
+import SentientLogo from '../components/SentientLogo';
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -430,20 +431,7 @@ function VendorField() {
         {/* Header */}
         <div style={{ background: th.surface, borderBottom: `1px solid ${th.border}`, padding: '14px 16px', position: 'sticky', top: 0, zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 20, height: 20, border: '1.5px solid #2ECC9A', borderRadius: 4, display: 'grid', placeItems: 'center', background: 'rgba(46,204,154,0.1)' }}>
-                <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="#2ECC9A" strokeWidth="1.5">
-                  <path d="M8 2L14 5.5V10.5L8 14L2 10.5V5.5L8 2Z"/>
-                  <circle cx="8" cy="8" r="2" fill="#2ECC9A" stroke="none"/>
-                </svg>
-              </div>
-              <div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1, color: th.textPrimary }}>
-                  Sentient {clientParam && <span style={{ color: th.textMuted, fontWeight: 400 }}>| {clientParam}</span>}
-                </div>
-                <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#2ECC9A' }}>Field Supervision</div>
-              </div>
-            </div>
+            <SentientLogo size="sm" showTagline={true} clientName={clientParam} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, color: th.textPrimary }}>{timeStr}</div>

@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../../lib/supabase';
+import SentientLogo from '../../components/SentientLogo';
 
 const ADMIN_EMAIL = 'flooklimited@outlook.com';
 
@@ -63,16 +64,7 @@ export default function AdminLogin() {
 
         {/* Logo */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: 40 }}>
-          <div style={{ width: 48, height: 48, border: '1.5px solid #2ECC9A', borderRadius: 10, display: 'grid', placeItems: 'center', background: 'rgba(46,204,154,0.08)' }}>
-            <svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="#2ECC9A" strokeWidth="1.5">
-              <path d="M8 2L14 5.5V10.5L8 14L2 10.5V5.5L8 2Z"/>
-              <circle cx="8" cy="8" r="2" fill="#2ECC9A" stroke="none"/>
-            </svg>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 28, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: th.textPrimary }}>Sentient</div>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.32em', textTransform: 'uppercase', color: '#2ECC9A', marginTop: 2 }}>Admin Access</div>
-          </div>
+          <SentientLogo size="lg" showTagline={true} />
         </div>
 
         {/* Card */}
