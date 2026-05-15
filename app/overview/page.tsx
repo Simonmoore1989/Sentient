@@ -360,7 +360,7 @@ export default function Overview() {
           background: #0E1419; border: 1px solid rgba(224,90,90,0.3);
           border-radius: 6px; padding: 8px 12px; min-width: 180px; max-width: 280px;
           font-family: 'Space Grotesk', sans-serif; font-size: 11px; color: #E8EDF2;
-          line-height: 1.5; z-index: 9999; pointer-events: none;
+          line-height: 1.5; z-index: 99999; pointer-events: none;
           box-shadow: 0 8px 24px rgba(0,0,0,0.4);
           white-space: normal; word-break: break-word;
         }
@@ -553,7 +553,7 @@ export default function Overview() {
               {criticalTasks.length === 0 ? (
                 <div style={{ fontSize: 11, color: th.textMuted, fontFamily: "'Space Grotesk', sans-serif", padding: '12px 0' }}>No active tasks</div>
               ) : criticalTasks.map(t => (
-                <div key={t.id} className="glass-sheen" style={{ ...glassCard, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div key={t.id} className="glass-sheen" style={{ ...glassCard, overflow: 'visible', padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div>
                     <div style={{ fontSize: 9, color: th.textMuted, letterSpacing: '0.08em', fontFamily: "'Space Grotesk', sans-serif" }}>{t.id}</div>
                     <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 600, color: th.textPrimary, marginTop: 2 }}>{t.name}</div>
