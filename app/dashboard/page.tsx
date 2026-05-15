@@ -37,9 +37,23 @@ function calculateAutoDelay(op: any): number {
   }
 }
 
+function isOnCriticalChain(taskWo: string, taskMap: Record<string, any>, visited: Set<string> = new Set()): boolean {
+  if (visited.has(taskWo)) return false;
+  visited.add(taskWo);
+  const task = taskMap[taskWo];
+  if (!task) return false;
+  if (!task.successors || task.successors.trim() === '') return true;
+  const successorIds = task.successors.split(',').map((s: string) => s.trim()).filter(Boolean);
+  if (successorIds.length === 0) return true;
+  return successorIds.some((id: string) => isOnCriticalChain(id, taskMap, visited));
+}
+
 function isCritical(task: any, allTasks: any[]): boolean {
   if (task.critical === true) return true;
-  if (task.status === 'DELAYED' && task.successors && task.successors.trim() !== '') return true;
+  if (task.status === 'DELAYED' && task.successors && task.successors.trim() !== '') {
+    const taskMap = Object.fromEntries(allTasks.map(t => [t.wo, t]));
+    return isOnCriticalChain(task.wo, taskMap);
+  }
   return false;
 }
 

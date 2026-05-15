@@ -15,7 +15,19 @@ type Task = {
   wo: string;
   shutdown_id: string;
   critical: boolean;
+  successors?: string;
 };
+
+function isOnCriticalChain(taskWo: string, taskMap: Record<string, Task>, visited: Set<string> = new Set()): boolean {
+  if (visited.has(taskWo)) return false;
+  visited.add(taskWo);
+  const task = taskMap[taskWo];
+  if (!task) return false;
+  if (!task.successors || task.successors.trim() === '') return true;
+  const successorIds = task.successors.split(',').map((s: string) => s.trim()).filter(Boolean);
+  if (successorIds.length === 0) return true;
+  return successorIds.some((id: string) => isOnCriticalChain(id, taskMap, visited));
+}
 
 function parseTaskDate(dateStr: string): Date | null {
   if (!dateStr) return null;
@@ -119,8 +131,16 @@ export default function Overview() {
     'IN PROGRESS': { label: 'In Progress',  color: '#4A9EE0', bg: 'rgba(74,158,224,0.12)' },
     'COMPLETE':    { label: 'Complete',     color: '#2ECC9A', bg: 'rgba(46,204,154,0.12)' },
   };
+  const taskMap = Object.fromEntries(tasks.map(t => [t.wo, t]));
   const criticalTasks = [...tasks]
-    .filter(t => t.critical === true && t.status !== 'COMPLETE')
+    .filter(t => {
+      if (t.status === 'COMPLETE') return false;
+      if (t.critical === true) return true;
+      if (t.status === 'DELAYED' && t.successors && t.successors.trim() !== '') {
+        return isOnCriticalChain(t.wo, taskMap);
+      }
+      return false;
+    })
     .sort((a, b) => {
       const sp = statusPriority(a.status) - statusPriority(b.status);
       return sp !== 0 ? sp : parseDuration(b.duration) - parseDuration(a.duration);

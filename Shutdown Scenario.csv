@@ -1,30 +1,31 @@
-Order Number,Operation Number,Name,Start,Finish,Duration,Crew,Complete,Critical
-WO-8001,,SAG Mill Reline,20/06/2026 06:00,23/06/2026 18:00,84,Monadelphous T1,0,Yes
-WO-8001,10,Isolate and De-energise SAG Mill,20/06/2026 06:00,20/06/2026 10:00,4,Monadelphous T1,0,Yes
-WO-8001,20,Remove Worn Shell Liners,20/06/2026 10:00,21/06/2026 18:00,32,Monadelphous T1,0,Yes
-WO-8001,30,Install New Shell Liners,21/06/2026 18:00,23/06/2026 06:00,36,Monadelphous T1,0,Yes
-WO-8001,40,Commission and Return to Service,23/06/2026 06:00,23/06/2026 18:00,12,Monadelphous T1,0,Yes
-WO-8002,,Main Drive Gearbox Overhaul,20/06/2026 06:00,22/06/2026 18:00,60,Monadelphous T2,0,Yes
-WO-8002,10,Drain Gearbox Oil and Remove Guards,20/06/2026 06:00,20/06/2026 14:00,8,Monadelphous T2,0,Yes
-WO-8002,20,Inspect and Replace Bearings,20/06/2026 14:00,21/06/2026 14:00,24,Monadelphous T2,0,Yes
-WO-8002,30,Reassemble and Refill Gearbox,21/06/2026 14:00,22/06/2026 18:00,28,Monadelphous T2,0,Yes
-WO-8003,,Ball Mill Liner Change,20/06/2026 06:00,22/06/2026 06:00,48,SIMPEC T1,0,Yes
-WO-8003,10,Remove Ball Mill Liners,20/06/2026 06:00,21/06/2026 06:00,24,SIMPEC T1,0,Yes
-WO-8003,20,Install New Ball Mill Liners,21/06/2026 06:00,22/06/2026 06:00,24,SIMPEC T1,0,Yes
-WO-8004,,Conveyor Drive Replacement,20/06/2026 06:00,21/06/2026 18:00,36,SIMPEC T2,0,No
-WO-8004,10,De-tension Conveyor Belt,20/06/2026 06:00,20/06/2026 10:00,4,SIMPEC T2,0,No
-WO-8004,20,Replace Drive Motor and Gearbox,20/06/2026 10:00,21/06/2026 10:00,24,SIMPEC T2,0,No
-WO-8004,30,Re-tension Belt and Commission,21/06/2026 10:00,21/06/2026 18:00,8,SIMPEC T2,0,No
-WO-8005,,Crusher Apron Feeder Overhaul,20/06/2026 06:00,21/06/2026 06:00,24,Byrnecut T1,0,No
-WO-8005,10,Remove and Inspect Apron Plates,20/06/2026 06:00,20/06/2026 18:00,12,Byrnecut T1,0,No
-WO-8005,20,Replace Worn Plates and Bearings,20/06/2026 18:00,21/06/2026 06:00,12,Byrnecut T1,0,No
-WO-8006,,Pump Station Seal Replacement,21/06/2026 06:00,22/06/2026 06:00,24,Byrnecut T2,0,No
-WO-8006,10,Isolate and Drain Pump Station,21/06/2026 06:00,21/06/2026 10:00,4,Byrnecut T2,0,No
-WO-8006,20,Replace Mechanical Seals,21/06/2026 10:00,21/06/2026 22:00,12,Byrnecut T2,0,No
-WO-8006,30,Recommission and Pressure Test,21/06/2026 22:00,22/06/2026 06:00,8,Byrnecut T2,0,No
-WO-8007,,Electrical Switchroom Maintenance,20/06/2026 06:00,20/06/2026 18:00,12,Linkforce T1,0,No
-WO-8007,10,Inspect and Clean Switchboards,20/06/2026 06:00,20/06/2026 12:00,6,Linkforce T1,0,No
-WO-8007,20,Test and Certify Protection Relays,20/06/2026 12:00,20/06/2026 18:00,6,Linkforce T1,0,No
-WO-8008,,Instrumentation Calibration,21/06/2026 06:00,21/06/2026 18:00,12,Linkforce T2,0,No
-WO-8008,10,Calibrate Flow and Pressure Transmitters,21/06/2026 06:00,21/06/2026 12:00,6,Linkforce T2,0,No
-WO-8008,20,Calibrate Level and Temperature Sensors,21/06/2026 12:00,21/06/2026 18:00,6,Linkforce T2,0,No
+Order Number,Operation Number,Name,Start,Finish,Duration,Crew,Complete,Critical,Predecessors,Successors
+WO-9001,,SAG Mill Reline,20/06/2026 06:00,24/06/2026 18:00,108,Monadelphous T1,0,Yes,,WO-9002
+WO-9001,10,Isolate and De-energise SAG Mill,20/06/2026 06:00,20/06/2026 10:00,4,Monadelphous T1,0,Yes,,WO-9001-20
+WO-9001,20,Remove Worn Shell Liners,20/06/2026 10:00,22/06/2026 06:00,44,Monadelphous T1,0,Yes,WO-9001-10,WO-9001-30
+WO-9001,30,Inspect and Blast Clean Shell,22/06/2026 06:00,22/06/2026 18:00,12,Monadelphous T1,0,Yes,WO-9001-20,WO-9001-40
+WO-9001,40,Install New Shell Liners,22/06/2026 18:00,24/06/2026 06:00,36,Monadelphous T1,0,Yes,WO-9001-30,WO-9001-50
+WO-9001,50,Commission and Return to Service,24/06/2026 06:00,24/06/2026 18:00,12,Monadelphous T1,0,Yes,WO-9001-40,WO-9002
+WO-9002,,Main Drive Gearbox Overhaul,24/06/2026 18:00,26/06/2026 18:00,48,Monadelphous T2,0,Yes,WO-9001,WO-9003
+WO-9002,10,Drain Oil and Remove Guards,24/06/2026 18:00,25/06/2026 02:00,8,Monadelphous T2,0,Yes,WO-9001,WO-9002-20
+WO-9002,20,Inspect and Replace Bearings,25/06/2026 02:00,26/06/2026 02:00,24,Monadelphous T2,0,Yes,WO-9002-10,WO-9002-30
+WO-9002,30,Reassemble and Refill Gearbox,26/06/2026 02:00,26/06/2026 18:00,16,Monadelphous T2,0,Yes,WO-9002-20,WO-9003
+WO-9003,,Final Commissioning and Handover,26/06/2026 18:00,27/06/2026 06:00,12,Monadelphous T1,0,Yes,WO-9002,,
+WO-9003,10,Run and Monitor SAG Mill,26/06/2026 18:00,27/06/2026 00:00,6,Monadelphous T1,0,Yes,WO-9002,WO-9003-20
+WO-9003,20,Sign Off and Handover to Operations,27/06/2026 00:00,27/06/2026 06:00,6,Monadelphous T1,0,Yes,WO-9003-10,,
+WO-9004,,Conveyor Drive Replacement,20/06/2026 06:00,21/06/2026 18:00,36,SIMPEC T1,0,No,,WO-9005
+WO-9004,10,De-tension Conveyor Belt,20/06/2026 06:00,20/06/2026 10:00,4,SIMPEC T1,0,No,,WO-9004-20
+WO-9004,20,Replace Drive Motor and Gearbox,20/06/2026 10:00,21/06/2026 10:00,24,SIMPEC T1,0,No,WO-9004-10,WO-9004-30
+WO-9004,30,Re-tension Belt and Commission,21/06/2026 10:00,21/06/2026 18:00,8,SIMPEC T1,0,No,WO-9004-20,WO-9005
+WO-9005,,Pump Station Overhaul,21/06/2026 18:00,23/06/2026 06:00,36,SIMPEC T2,0,No,WO-9004,,
+WO-9005,10,Isolate and Drain Pump Station,21/06/2026 18:00,21/06/2026 22:00,4,SIMPEC T2,0,No,WO-9004,WO-9005-20
+WO-9005,20,Replace Impellers and Seals,21/06/2026 22:00,22/06/2026 22:00,24,SIMPEC T2,0,No,WO-9005-10,WO-9005-30
+WO-9005,30,Recommission and Pressure Test,22/06/2026 22:00,23/06/2026 06:00,8,SIMPEC T2,0,No,WO-9005-20,,
+WO-9006,,Crusher Apron Feeder Inspection,20/06/2026 06:00,21/06/2026 06:00,24,Byrnecut T1,0,No,,WO-9007
+WO-9006,10,Remove and Inspect Apron Plates,20/06/2026 06:00,20/06/2026 18:00,12,Byrnecut T1,0,No,,WO-9006-20
+WO-9006,20,Replace Worn Plates and Bearings,20/06/2026 18:00,21/06/2026 06:00,12,Byrnecut T1,0,No,WO-9006-10,WO-9007
+WO-9007,,Electrical Switchroom Maintenance,21/06/2026 06:00,21/06/2026 18:00,12,Linkforce T1,0,No,WO-9006,,
+WO-9007,10,Inspect and Clean Switchboards,21/06/2026 06:00,21/06/2026 12:00,6,Linkforce T1,0,No,WO-9006,WO-9007-20
+WO-9007,20,Test and Certify Protection Relays,21/06/2026 12:00,21/06/2026 18:00,6,Linkforce T1,0,No,WO-9007-10,,
+WO-9008,,Instrumentation Calibration,20/06/2026 06:00,20/06/2026 18:00,12,Linkforce T2,0,No,,
+WO-9008,10,Calibrate Flow and Pressure Transmitters,20/06/2026 06:00,20/06/2026 12:00,6,Linkforce T2,0,No,,WO-9008-20
+WO-9008,20,Calibrate Level and Temperature Sensors,20/06/2026 12:00,20/06/2026 18:00,6,Linkforce T2,0,No,WO-9008-10,,
