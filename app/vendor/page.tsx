@@ -654,8 +654,8 @@ function VendorField() {
                                           setDelayPanel(prev => ({
                                             ...prev,
                                             [opKey]: prev[opKey] || {
-                                              reason: updates[opKey]?.delayReason || op.delayReason || '',
-                                              hours: updates[opKey]?.delayHours || op.delayHours || 1,
+                                              reason: op.delayReason || '',
+                                              hours: op.delayHours || 1,
                                             }
                                           }));
                                         }
