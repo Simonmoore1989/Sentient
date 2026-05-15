@@ -23,8 +23,8 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Sentient" />
-        <link rel="icon" href="/icon.svg" type="image/svg+xml"/>
-        <link rel="apple-touch-icon" href="/icon.svg"/>
+        <link rel="icon" href="/icon-512.png" type="image/png"/>
+        <link rel="apple-touch-icon" href="/icon-512.png"/>
         <meta name="theme-color" content="#2ECC9A" />
       </head>
       <body className="min-h-full flex flex-col">{children}</body>
