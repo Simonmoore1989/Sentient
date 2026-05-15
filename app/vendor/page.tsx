@@ -292,18 +292,16 @@ function VendorField() {
       const opKey = `${taskId}-op-${i}`;
       const opUpdate = updates[opKey];
       const delay = delayPanel[opKey];
-      return {
-        op: op.op,
-        name: op.name,
-        start: op.start,
-        end: op.end,
-        duration: op.duration,
-        crew: op.crew,
-        progress: opUpdate?.progress ?? op.progress ?? 0,
-        status: opUpdate?.status ?? op.status ?? 'PENDING',
-        delayReason: delay?.reason ?? op.delayReason ?? '',
-        delayHours: delay?.hours ?? op.delayHours ?? 0,
-      };
+      const resolvedStatus = opUpdate?.status ?? op.status ?? 'PENDING';
+      const resolvedProgress = opUpdate?.progress ?? op.progress ?? 0;
+      const base = { op: op.op, name: op.name, start: op.start, end: op.end, duration: op.duration, crew: op.crew, progress: resolvedProgress, status: resolvedStatus };
+
+      if (resolvedStatus === 'DELAYED' && delay) {
+        return { ...base, delayReason: delay.reason, delayHours: delay.hours };
+      } else if (resolvedStatus !== 'DELAYED') {
+        return { ...base, delayReason: '', delayHours: 0 };
+      }
+      return { ...base, delayReason: op.delayReason ?? '', delayHours: op.delayHours ?? 0 };
     });
 
     if (updatedOpsWithDelay.length > 0) {
@@ -312,7 +310,7 @@ function VendorField() {
     }
 
     const anyOpDelayed = updatedOpsWithDelay.some((op: any) => op.status === 'DELAYED');
-    const newStatus = anyOpDelayed ? 'DELAYED' : update.status === 'DELAYED' ? 'DELAYED' : newProgress === 100 ? 'COMPLETE' : newProgress > 0 ? 'IN PROGRESS' : 'PENDING';
+    const newStatus = anyOpDelayed ? 'DELAYED' : newProgress === 100 ? 'COMPLETE' : newProgress > 0 ? 'IN PROGRESS' : 'PENDING';
 
     const { error } = await supabase
       .from('tasks')
@@ -321,6 +319,15 @@ function VendorField() {
       .eq('shutdown_id', task.shutdown_id);
 
     console.log('Supabase update result — status:', newStatus, 'error:', error);
+
+    if (!error) {
+      const { data: refreshed } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('id', taskId)
+        .single();
+      if (refreshed) setTasks(prev => prev.map(t => t.id === taskId ? refreshed : t));
+    }
 
     setSubmitted(prev => ({ ...prev, [taskId]: true }));
     setTimeout(() => setSubmitted(prev => ({ ...prev, [taskId]: false })), 3000);
