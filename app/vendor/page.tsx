@@ -647,8 +647,13 @@ function VendorField() {
                                     <button
                                       onClick={() => {
                                         if (opUpdate.status === 'DELAYED') {
-                                          setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], status: 'PENDING', showSlider: false } }));
-                                          setDelayPanel(prev => { const n = { ...prev }; delete n[opKey]; return n; });
+                                          setDelayPanel(prev => ({
+                                            ...prev,
+                                            [opKey]: prev[opKey] || {
+                                              reason: op.delayReason || '',
+                                              hours: op.delayHours || 1,
+                                            }
+                                          }));
                                         } else {
                                           setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], status: 'DELAYED', showSlider: false } }));
                                           setDelayPanel(prev => ({
@@ -674,11 +679,21 @@ function VendorField() {
                                     <div style={{ marginTop: 10, padding: '12px', background: 'rgba(224,90,90,0.06)', border: '1px solid rgba(224,90,90,0.2)', borderRadius: 8 }}>
                                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                                         <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#E05A5A' }}>Delay Details</span>
-                                        <button
-                                          onClick={() => setDelayPanel(prev => { const n = { ...prev }; delete n[opKey]; return n; })}
-                                          style={{ background: 'transparent', border: 'none', color: th.textMuted, cursor: 'pointer', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, textTransform: 'uppercase' }}>
-                                          Done
-                                        </button>
+                                        <div style={{ display: 'flex', gap: 10 }}>
+                                          <button
+                                            onClick={() => {
+                                              setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], status: 'PENDING', showSlider: false } }));
+                                              setDelayPanel(prev => { const n = { ...prev }; delete n[opKey]; return n; });
+                                            }}
+                                            style={{ background: 'transparent', border: 'none', color: '#E05A5A', cursor: 'pointer', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, textTransform: 'uppercase' }}>
+                                            Cancel Delay
+                                          </button>
+                                          <button
+                                            onClick={() => setDelayPanel(prev => { const n = { ...prev }; delete n[opKey]; return n; })}
+                                            style={{ background: 'transparent', border: 'none', color: th.textMuted, cursor: 'pointer', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, textTransform: 'uppercase' }}>
+                                            Done
+                                          </button>
+                                        </div>
                                       </div>
                                       <textarea
                                         rows={2}
