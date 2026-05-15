@@ -16,7 +16,21 @@ type Task = {
   shutdown_id: string;
   critical: boolean;
   successors?: string;
+  ops?: any[];
 };
+
+function getTotalDelay(task: any): number {
+  if (!task.ops) return 0;
+  return task.ops.reduce((sum: number, op: any) => op.status === 'DELAYED' ? sum + (op.delayHours || 0) : sum, 0);
+}
+
+function getDelayReasons(task: any): string {
+  if (!task.ops) return '';
+  return task.ops
+    .filter((op: any) => op.status === 'DELAYED' && op.delayReason)
+    .map((op: any) => op.name + ': ' + op.delayReason)
+    .join(' | ');
+}
 
 function isOnCriticalChain(taskWo: string, taskMap: Record<string, Task>, visited: Set<string> = new Set()): boolean {
   if (visited.has(taskWo)) return false;
@@ -41,6 +55,7 @@ export default function Overview() {
   const [revision, setRevision] = useState('');
   const [darkMode, setDarkMode] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [hoveredDelay, setHoveredDelay] = useState<string | null>(null);
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -122,6 +137,7 @@ export default function Overview() {
   const delayedCount = tasks.filter(t => t.status === 'DELAYED').length;
   const pendingCount = tasks.filter(t => t.status !== 'COMPLETE' && t.status !== 'IN PROGRESS' && t.status !== 'DELAYED').length;
   const pct = (n: number) => total > 0 ? `${Math.round(n / total * 100)}% of total` : '—';
+  const totalDelayHours = tasks.filter(t => t.status === 'DELAYED').reduce((sum, t) => sum + getTotalDelay(t), 0);
 
   // --- Critical path: DELAYED first, IN PROGRESS second, PENDING last; sorted by duration within each group ---
   const statusPriority = (s: string) => s === 'DELAYED' ? 0 : s === 'IN PROGRESS' ? 1 : 2;
@@ -150,6 +166,8 @@ export default function Overview() {
       id: t.wo || t.id,
       name: t.name,
       team: t.team || '—',
+      totalDelay: getTotalDelay(t),
+      delayReasons: getDelayReasons(t),
       ...(statusStyle[t.status] ?? { label: 'Yet To Start', color: '#5A7080', bg: 'rgba(90,112,128,0.12)' }),
     }));
 
@@ -336,6 +354,22 @@ export default function Overview() {
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
         .nav-tile:hover { border-color: #2ECC9A !important; color: #2ECC9A !important; background: rgba(46,204,154,0.06) !important; }
         .nav-tile:hover svg { stroke: #2ECC9A; }
+        .delay-tooltip {
+          position: absolute; bottom: calc(100% + 6px); left: 50%;
+          transform: translateX(-50%);
+          background: #0E1419; border: 1px solid rgba(224,90,90,0.3);
+          border-radius: 6px; padding: 8px 12px; min-width: 180px; max-width: 280px;
+          font-family: 'Space Grotesk', sans-serif; font-size: 11px; color: #E8EDF2;
+          line-height: 1.5; z-index: 9999; pointer-events: none;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+          white-space: normal; word-break: break-word;
+        }
+        .delay-tooltip::after {
+          content: ''; position: absolute; top: 100%; left: 50%;
+          transform: translateX(-50%);
+          border: 5px solid transparent;
+          border-top-color: rgba(224,90,90,0.3);
+        }
       `}</style>
 
       <div style={{ position: 'relative', zIndex: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: "'Space Grotesk', sans-serif", color: th.textPrimary, background: th.bg }}>
@@ -472,7 +506,7 @@ export default function Overview() {
     </div>
     {card('Complete', String(completeCount), '#2ECC9A', pct(completeCount))}
     {card('In Progress', String(inProgressCount), '#4A9EE0', pct(inProgressCount))}
-    {card('Delayed', String(delayedCount), '#E05A5A', pct(delayedCount))}
+    {card('Delayed', String(delayedCount), '#E05A5A', totalDelayHours > 0 ? `${totalDelayHours.toFixed(1)}h total delay` : pct(delayedCount))}
     {card('Yet To Start', String(pendingCount), th.textSecondary, pct(pendingCount))}
   </div>
 
@@ -525,7 +559,19 @@ export default function Overview() {
                     <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 600, color: th.textPrimary, marginTop: 2 }}>{t.name}</div>
                     <div style={{ fontSize: 9, color: th.textMuted, marginTop: 2, fontFamily: "'Space Grotesk', sans-serif" }}>{t.team}</div>
                   </div>
-                  <div style={{ background: t.bg, color: t.color, fontFamily: "'Space Grotesk', sans-serif", fontSize: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 4 }}>{t.label}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {t.totalDelay > 0 && (
+                      <div style={{ position: 'relative' }}
+                        onMouseEnter={() => setHoveredDelay(t.id)}
+                        onMouseLeave={() => setHoveredDelay(null)}>
+                        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, color: '#E05A5A', cursor: 'default' }}>+{t.totalDelay}h</span>
+                        {hoveredDelay === t.id && t.delayReasons && (
+                          <div className="delay-tooltip">{t.delayReasons}</div>
+                        )}
+                      </div>
+                    )}
+                    <div style={{ background: t.bg, color: t.color, fontFamily: "'Space Grotesk', sans-serif", fontSize: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 4 }}>{t.label}</div>
+                  </div>
                 </div>
               ))}
             </div>
