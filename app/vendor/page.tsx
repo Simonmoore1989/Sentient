@@ -554,6 +554,12 @@ function VendorField() {
                     }, 0) / task.ops.length)
                   : woUpdate.progress;
                 const progressColor = woUpdate.status === 'DELAYED' ? '#E05A5A' : progress === 100 ? '#2ECC9A' : progress > 0 ? '#4A9EE0' : th.textMuted;
+                const totalDelay = task.ops?.reduce((sum: number, op: any, i: number) => {
+                  const opKey = task.id + '-op-' + i;
+                  const hours = delayPanel[opKey]?.hours || op.delayHours || 0;
+                  const status = updates[opKey]?.status || op.status;
+                  return status === 'DELAYED' ? sum + hours : sum;
+                }, 0) || 0;
 
                 return (
                   <div key={task.id} id={task.id} ref={el => { taskRefs.current[task.id] = el; }} style={{ background: th.surface, border: `1px solid ${isSubmitted ? '#2ECC9A' : th.border}`, borderRadius: 12, overflow: 'hidden', animation: 'fadeIn 0.3s ease', transition: 'border-color 0.3s' }}>
@@ -571,6 +577,9 @@ function VendorField() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                         <div style={{ textAlign: 'right' }}>
                           <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 16, fontWeight: 800, color: progressColor }}>{progress}%</div>
+                          {totalDelay > 0 && (
+                            <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, color: '#E05A5A' }}>+{totalDelay}h delay</div>
+                          )}
                           <div style={{ fontSize: 8, color: th.textMuted }}>{task.start}</div>
                           <div style={{ fontSize: 8, color: th.textMuted }}>→ {task.end}</div>
                         </div>
@@ -642,7 +651,13 @@ function VendorField() {
                                           setDelayPanel(prev => { const n = { ...prev }; delete n[opKey]; return n; });
                                         } else {
                                           setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], status: 'DELAYED', showSlider: false } }));
-                                          setDelayPanel(prev => ({ ...prev, [opKey]: prev[opKey] || { reason: '', hours: 1 } }));
+                                          setDelayPanel(prev => ({
+                                            ...prev,
+                                            [opKey]: prev[opKey] || {
+                                              reason: updates[opKey]?.delayReason || op.delayReason || '',
+                                              hours: updates[opKey]?.delayHours || op.delayHours || 1,
+                                            }
+                                          }));
                                         }
                                       }}
                                       style={{ flex: 1, padding: '8px 4px', background: opUpdate.status === 'DELAYED' ? 'rgba(224,90,90,0.15)' : 'transparent', border: `1px solid ${opUpdate.status === 'DELAYED' ? '#E05A5A' : th.border}`, borderRadius: 6, color: opUpdate.status === 'DELAYED' ? '#E05A5A' : th.textMuted, fontFamily: "'Syne', sans-serif", fontSize: 8, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', cursor: 'pointer' }}>
