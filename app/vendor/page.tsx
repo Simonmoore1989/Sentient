@@ -287,34 +287,32 @@ function VendorField() {
     if (!task) return;
 
     let newProgress = update.progress;
-    let updatedOps = task.ops || [];
 
-    if (task.ops && task.ops.length > 0) {
-      updatedOps = task.ops.map((op: any, i: number) => {
-        const opKey = `${taskId}-op-${i}`;
-        const opUpdate = updates[opKey];
-        return opUpdate ? { ...op, progress: opUpdate.progress, status: opUpdate.status } : op;
-      });
+    const updatedOpsWithDelay = (task.ops || []).map((op: any, i: number) => {
+      const opKey = `${taskId}-op-${i}`;
+      const opUpdate = updates[opKey];
+      const delay = delayPanel[opKey];
+      return {
+        op: op.op,
+        name: op.name,
+        start: op.start,
+        end: op.end,
+        duration: op.duration,
+        crew: op.crew,
+        progress: opUpdate?.progress ?? op.progress ?? 0,
+        status: opUpdate?.status ?? op.status ?? 'PENDING',
+        delayReason: delay?.reason ?? op.delayReason ?? '',
+        delayHours: delay?.hours ?? op.delayHours ?? 0,
+      };
+    });
 
-      const totalOpProgress = updatedOps.reduce((sum: number, op: any) => sum + (op.progress || 0), 0);
-      newProgress = Math.round(totalOpProgress / updatedOps.length);
+    if (updatedOpsWithDelay.length > 0) {
+      const totalOpProgress = updatedOpsWithDelay.reduce((sum: number, op: any) => sum + (op.progress || 0), 0);
+      newProgress = Math.round(totalOpProgress / updatedOpsWithDelay.length);
     }
 
-    const anyOpDelayed = task.ops && task.ops.some((_: any, i: number) => {
-      const opKey = `${taskId}-op-${i}`;
-      return updates[opKey]?.status === 'DELAYED';
-    });
-
+    const anyOpDelayed = updatedOpsWithDelay.some((op: any) => op.status === 'DELAYED');
     const newStatus = anyOpDelayed ? 'DELAYED' : update.status === 'DELAYED' ? 'DELAYED' : newProgress === 100 ? 'COMPLETE' : newProgress > 0 ? 'IN PROGRESS' : 'PENDING';
-
-    const updatedOpsWithDelay = updatedOps.map((op: any, i: number) => {
-      const opKey = `${taskId}-op-${i}`;
-      const delay = delayPanel[opKey];
-      if (delay) {
-        return { ...op, delayReason: delay.reason, delayHours: delay.hours };
-      }
-      return op;
-    });
 
     const { error } = await supabase
       .from('tasks')
@@ -682,8 +680,15 @@ function VendorField() {
                                         <div style={{ display: 'flex', gap: 10 }}>
                                           <button
                                             onClick={() => {
-                                              setUpdates(prev => ({ ...prev, [opKey]: { ...prev[opKey], status: 'PENDING', showSlider: false } }));
                                               setDelayPanel(prev => { const n = { ...prev }; delete n[opKey]; return n; });
+                                              setUpdates(prev => ({
+                                                ...prev,
+                                                [opKey]: {
+                                                  ...prev[opKey],
+                                                  status: (prev[opKey]?.progress ?? 0) > 0 ? 'IN PROGRESS' : 'PENDING',
+                                                  showSlider: false,
+                                                }
+                                              }));
                                             }}
                                             style={{ background: 'transparent', border: 'none', color: '#E05A5A', cursor: 'pointer', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, textTransform: 'uppercase' }}>
                                             Cancel Delay
