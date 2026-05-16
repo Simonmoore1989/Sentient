@@ -64,7 +64,7 @@ export default function AdminLogin() {
 
         {/* Logo */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginBottom: 40 }}>
-          <SentientLogo size="lg" showTagline={true} />
+          <SentientLogo size="lg" showTagline={true} stacked={true} />
         </div>
 
         {/* Card */}
