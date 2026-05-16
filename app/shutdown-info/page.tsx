@@ -211,7 +211,7 @@ export default function ShutdownInfo() {
 
         {/* Header */}
         <header style={{ padding: '20px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${th.border}`, flexShrink: 0, background: th.surface }}>
-          <SentientLogo size="md" showTagline={true} clientName={clientName} />
+          <SentientLogo size="md" showTagline={true} clientName={clientName} textColor={darkMode ? '#E8EDF2' : '#0D1318'} mutedColor={darkMode ? '#2E4050' : '#8FA0AE'} />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

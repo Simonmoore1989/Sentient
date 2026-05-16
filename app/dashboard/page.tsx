@@ -187,7 +187,7 @@ export default function Dashboard() {
 
         {/* Header */}
         <header style={{ padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${th.border}`, flexShrink: 0, background: th.headerBg }}>
-          <SentientLogo size="md" showTagline={true} clientName={clientName} />
+          <SentientLogo size="md" showTagline={true} clientName={clientName} textColor={darkMode ? '#E8EDF2' : '#0D1318'} mutedColor={darkMode ? '#2E4050' : '#8FA0AE'} />
           <div style={{ position: 'relative' }}>
             <button onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }} style={{ padding: '8px 10px', background: 'transparent', border: `1px solid ${th.border}`, borderRadius: 6, color: th.textSecondary, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
