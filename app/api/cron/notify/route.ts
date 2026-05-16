@@ -4,12 +4,6 @@ import { NextRequest } from 'next/server';
 import webpush from 'web-push';
 import { createClient } from '@supabase/supabase-js';
 
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL!,
-  process.env.NEXT_PUBLIC_VAPID_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
-
 function parseTaskDate(str: string): Date | null {
   if (!str) return null;
   try {
@@ -22,10 +16,17 @@ function parseTaskDate(str: string): Date | null {
 }
 
 export async function GET(request: NextRequest) {
+  try {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== 'Bearer ' + process.env.CRON_SECRET) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  webpush.setVapidDetails(
+    process.env.VAPID_EMAIL!,
+    process.env.NEXT_PUBLIC_VAPID_KEY!,
+    process.env.VAPID_PRIVATE_KEY!
+  );
 
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -121,4 +122,8 @@ export async function GET(request: NextRequest) {
   }
 
   return Response.json({ notified, skipped, total: (supervisors ?? []).length });
+  } catch (err: any) {
+    console.error('[cron/notify] unhandled error:', err.message);
+    return Response.json({ error: err.message }, { status: 500 });
+  }
 }
