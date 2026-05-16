@@ -15,6 +15,7 @@ export default function VendorSetup() {
   const [notifPermission, setNotifPermission] = useState('default');
   const [promptMode, setPromptMode] = useState<'manual' | 'automatic'>('manual');
   const [promptInterval, setPromptInterval] = useState(2);
+  const [currentShutdownId, setCurrentShutdownId] = useState<string | null>(null);
   const [emailModal, setEmailModal] = useState<{ role: string; link: string } | null>(null);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -45,7 +46,10 @@ export default function VendorSetup() {
       .limit(1)
       .single();
 
-    if (shutdownData) setClientName(shutdownData.client || '');
+    if (shutdownData) {
+      setClientName(shutdownData.client || '');
+      setCurrentShutdownId(shutdownData.id);
+    }
 
     if (!shutdownData) return;
 
@@ -112,6 +116,15 @@ export default function VendorSetup() {
         applicationServerKey: process.env.NEXT_PUBLIC_VAPID_KEY
       });
     }
+  }
+
+  async function saveNotifInterval(interval: number) {
+    setPromptInterval(interval);
+    if (!currentShutdownId) return;
+    await supabase
+      .from('supervisors')
+      .update({ notif_interval: interval })
+      .eq('shutdown_id', currentShutdownId);
   }
 
   function toggleVendor(vendorId: string) {
@@ -388,8 +401,8 @@ export default function VendorSetup() {
                 {promptMode === 'automatic' && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 8 }}>
                     <span style={{ fontSize: 9, color: th.textSecondary, letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: "'Syne', sans-serif", fontWeight: 700 }}>Every</span>
-                    <select value={promptInterval} onChange={e => setPromptInterval(Number(e.target.value))} style={{ background: th.surface2, border: '1px solid #2ECC9A', borderRadius: 6, padding: '6px 10px', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: '#2ECC9A', outline: 'none', cursor: 'pointer' }}>
-                      {Array.from({ length: 24 }, (_, i) => i + 1).map(h => (
+                    <select value={promptInterval} onChange={e => saveNotifInterval(Number(e.target.value))} style={{ background: th.surface2, border: '1px solid #2ECC9A', borderRadius: 6, padding: '6px 10px', fontFamily: "'Syne', sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: '#2ECC9A', outline: 'none', cursor: 'pointer' }}>
+                      {[1, 2, 4, 6, 12].map(h => (
                         <option key={h} value={h}>{h} {h === 1 ? 'hr' : 'hrs'}</option>
                       ))}
                     </select>
