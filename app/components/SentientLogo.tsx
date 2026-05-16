@@ -17,9 +17,9 @@ export default function SentientLogo({
   mutedColor = '#2E4050'
 }: Props) {
   const config = {
-    sm: { box: 20, boxRadius: 4, svg: 10, fontSize: 12, tagSize: 6, gap: 8, strokeWidth: 1.5, tagLetterSpacing: '0.18em' },
-    md: { box: 28, boxRadius: 6, svg: 14, fontSize: 14, tagSize: 6, gap: 10, strokeWidth: 1.5, tagLetterSpacing: '0.22em' },
-    lg: { box: 52, boxRadius: 10, svg: 28, fontSize: 28, tagSize: 9, gap: 14, strokeWidth: 2, tagLetterSpacing: '0.28em' },
+    sm: { box: 20, boxRadius: 4, svg: 10, fontSize: 12, tagSize: 6, gap: 8, strokeWidth: 1.5 },
+    md: { box: 28, boxRadius: 6, svg: 14, fontSize: 14, tagSize: 6, gap: 10, strokeWidth: 1.5 },
+    lg: { box: 52, boxRadius: 10, svg: 28, fontSize: 28, tagSize: 9, gap: 14, strokeWidth: 2 },
   }[size];
 
   return (
@@ -39,7 +39,7 @@ export default function SentientLogo({
           <circle cx="16" cy="16" r="4" fill="#2ECC9A"/>
         </svg>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 0, width: 'fit-content' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
         <span style={{
           fontFamily: "'Syne', sans-serif",
           fontSize: config.fontSize,
@@ -58,13 +58,10 @@ export default function SentientLogo({
             fontFamily: "'Syne', sans-serif",
             fontSize: config.tagSize,
             fontWeight: 700,
-            letterSpacing: config.tagLetterSpacing,
+            letterSpacing: '0.32em',
             textTransform: 'uppercase' as const,
             color: '#2ECC9A',
-            display: 'block',
-            width: '100%',
-            textAlign: 'justify',
-            textAlignLast: 'justify',
+            whiteSpace: 'nowrap',
           }}>Execution Intelligence</span>
         )}
       </div>
