@@ -17,9 +17,9 @@ export default function SentientLogo({
   mutedColor = '#2E4050'
 }: Props) {
   const config = {
-    sm: { box: 20, boxRadius: 4, svg: 10, fontSize: 12, tagSize: 6, gap: 8, strokeWidth: 1.5 },
+    sm: { box: 20, boxRadius: 4, svg: 10, fontSize: 12, tagSize: 5, gap: 8, strokeWidth: 1.5 },
     md: { box: 28, boxRadius: 6, svg: 14, fontSize: 14, tagSize: 6, gap: 10, strokeWidth: 1.5 },
-    lg: { box: 52, boxRadius: 10, svg: 28, fontSize: 28, tagSize: 9, gap: 14, strokeWidth: 2 },
+    lg: { box: 52, boxRadius: 10, svg: 28, fontSize: 28, tagSize: 8, gap: 14, strokeWidth: 2 },
   }[size];
 
   return (
