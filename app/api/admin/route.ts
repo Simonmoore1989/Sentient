@@ -63,6 +63,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ shutdowns: data });
   }
 
+  if (type === 'tasks') {
+    const shutdownId = searchParams.get('shutdownId');
+    if (!shutdownId) return NextResponse.json({ error: 'Missing shutdownId' }, { status: 400 });
+    const { data, error } = await admin
+      .from('tasks')
+      .select('id, wo, name, team, status, progress, start, end, duration, ops, critical, predecessors, successors, actual_start, actual_finish, created_at')
+      .eq('shutdown_id', shutdownId);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ tasks: data });
+  }
+
   return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
 }
 
@@ -87,14 +98,31 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { userId } = await request.json();
-  console.log('[admin/route] DELETE user:', userId);
-
-  if (!userId) {
-    return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
-  }
+  const body = await request.json();
+  const { userId, shutdownId } = body;
 
   const admin = adminClient();
+
+  if (shutdownId) {
+    console.log('[admin/route] DELETE shutdown:', shutdownId);
+    const { error: tasksErr } = await admin.from('tasks').delete().eq('shutdown_id', shutdownId);
+    if (tasksErr) console.error('[admin/route] tasks delete error:', tasksErr.message);
+    const { error: supervisorsErr } = await admin.from('supervisors').delete().eq('shutdown_id', shutdownId);
+    if (supervisorsErr) console.error('[admin/route] supervisors delete error:', supervisorsErr.message);
+    const { error: shutdownErr } = await admin.from('shutdowns').delete().eq('id', shutdownId);
+    if (shutdownErr) {
+      console.error('[admin/route] shutdown delete error:', shutdownErr.message);
+      return NextResponse.json({ error: shutdownErr.message }, { status: 500 });
+    }
+    console.log('[admin/route] shutdown deleted successfully:', shutdownId);
+    return NextResponse.json({ success: true });
+  }
+
+  if (!userId) {
+    return NextResponse.json({ error: 'Missing userId or shutdownId' }, { status: 400 });
+  }
+
+  console.log('[admin/route] DELETE user:', userId);
 
   // Delete tasks first, then shutdowns, then the auth user
   const { error: tasksError } = await admin.from('tasks').delete().eq('user_id', userId);

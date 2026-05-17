@@ -32,6 +32,9 @@ export default function Admin() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [deletingShutdownId, setDeletingShutdownId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('darkMode');
@@ -139,11 +142,89 @@ export default function Admin() {
     localStorage.setItem('darkMode', String(next));
   }
 
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 4000);
+  }
+
+  function fmtTimestamp(iso: string | null) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${dd}/${mm}/${d.getFullYear()} ${hh}:${mi}`;
+  }
+
   function fmtDate(iso: string | null) {
     if (!iso) return '—';
     const d = new Date(iso);
     return d.toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' }) +
       ' ' + d.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  async function handleDownloadShutdown(s: Shutdown) {
+    setDownloadingId(s.id);
+    try {
+      const res = await fetch(`/api/admin?type=tasks&shutdownId=${s.id}`);
+      const json = await res.json();
+      if (json.error) { alert('Failed to fetch tasks: ' + json.error); return; }
+
+      const tasks: any[] = json.tasks || [];
+      const headers = ['WO', 'Task Name', 'Team', 'Status', 'Progress %', 'Planned Start', 'Planned Finish', 'Planned Duration Hours', 'Critical', 'Predecessors', 'Successors', 'Actual Start', 'Actual Finish', 'Total Delay Hours', 'Delay Reasons'];
+
+      const rows = tasks.map(t => {
+        const ops: any[] = t.ops || [];
+        const delayed = ops.filter(op => op.status === 'DELAYED');
+        const totalDelayHours = delayed.reduce((sum, op) => sum + (op.delayHours || 0), 0);
+        const delayReasons = delayed.map(op => op.delayReason).filter(Boolean).join(' | ');
+        return [
+          t.wo, t.name, t.team, t.status, t.progress,
+          t.start, t.end, t.duration,
+          t.critical ? 'Yes' : 'No',
+          t.predecessors, t.successors,
+          fmtTimestamp(t.actual_start), fmtTimestamp(t.actual_finish),
+          totalDelayHours, delayReasons,
+        ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',');
+      });
+
+      const csv = [headers.join(','), ...rows].join('\n');
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const filename = `Sentient-${s.client}-${s.revision}-${dateStr}.csv`;
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloadingId(null);
+    }
+  }
+
+  async function handleDeleteShutdown(s: Shutdown) {
+    if (!confirm(`Delete ${s.client} ${s.revision} and all associated data? This cannot be undone.`)) return;
+    setDeletingShutdownId(s.id);
+    try {
+      const res = await fetch('/api/admin', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shutdownId: s.id }),
+      });
+      const json = await res.json();
+      if (!res.ok || json.error) {
+        alert(`Failed to delete shutdown: ${json.error}`);
+      } else {
+        await loadShutdowns();
+        showToast(`${s.client} ${s.revision} deleted successfully.`);
+      }
+    } catch {
+      alert('Delete failed — check console for details.');
+    } finally {
+      setDeletingShutdownId(null);
+    }
   }
 
   function getUserEmail(userId: string | null | undefined) {
@@ -242,6 +323,12 @@ export default function Admin() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)', background: th.surface2, border: `1px solid ${th.border}`, borderRadius: 8, padding: '10px 18px', fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, fontWeight: 500, color: th.textPrimary, zIndex: 99999, boxShadow: '0 8px 32px rgba(0,0,0,0.35)', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
+          {toast}
         </div>
       )}
 
@@ -362,8 +449,8 @@ export default function Admin() {
             </div>
 
             <div style={{ background: th.surface, border: `1px solid ${th.border}`, borderRadius: 10, overflow: 'hidden' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', padding: '10px 20px', borderBottom: `1px solid ${th.border}`, background: th.surface2 }}>
-                {['Client', 'Revision', 'Created', 'Owner'].map((h, i) => (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 160px', padding: '10px 20px', borderBottom: `1px solid ${th.border}`, background: th.surface2 }}>
+                {['Client', 'Revision', 'Created', 'Owner', ''].map((h, i) => (
                   <div key={i} style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 8, fontWeight: 600, letterSpacing: '0.2em', textTransform: 'uppercase', color: th.textMuted }}>{h}</div>
                 ))}
               </div>
@@ -372,12 +459,27 @@ export default function Admin() {
               ) : (
                 shutdowns.map(s => (
                   <div key={s.id} className="row-hover"
-                    style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', padding: '14px 20px', borderBottom: `1px solid ${th.border}`, alignItems: 'center', transition: 'background 0.15s' }}>
+                    style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 160px', padding: '14px 20px', borderBottom: `1px solid ${th.border}`, alignItems: 'center', transition: 'background 0.15s' }}>
                     <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 700, color: th.textPrimary }}>{s.client || '—'}</div>
                     <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, color: '#2ECC9A', fontWeight: 600 }}>{s.revision || '—'}</div>
                     <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, color: th.textSecondary }}>{fmtDate(s.created_at)}</div>
                     <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 10, color: th.textSecondary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {getUserEmail(s.user_id)}
+                    </div>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        onClick={() => handleDownloadShutdown(s)}
+                        disabled={downloadingId === s.id}
+                        style={{ padding: '5px 10px', background: 'transparent', border: '1px solid rgba(46,204,154,0.4)', borderRadius: 5, color: '#2ECC9A', fontFamily: "'Space Grotesk', sans-serif", fontSize: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', opacity: downloadingId === s.id ? 0.5 : 1 }}>
+                        {downloadingId === s.id ? '...' : 'Download'}
+                      </button>
+                      <button
+                        className="delete-btn"
+                        onClick={() => handleDeleteShutdown(s)}
+                        disabled={deletingShutdownId === s.id}
+                        style={{ padding: '5px 10px', background: 'transparent', border: `1px solid ${th.border}`, borderRadius: 5, color: th.textSecondary, fontFamily: "'Space Grotesk', sans-serif", fontSize: 8, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', opacity: deletingShutdownId === s.id ? 0.5 : 1 }}>
+                        {deletingShutdownId === s.id ? '...' : 'Delete'}
+                      </button>
                     </div>
                   </div>
                 ))
