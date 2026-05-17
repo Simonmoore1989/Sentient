@@ -431,7 +431,7 @@ function VendorField() {
         {/* Header */}
         <div style={{ background: th.surface, borderBottom: `1px solid ${th.border}`, padding: '14px 16px', position: 'sticky', top: 0, zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <SentientLogo size="sm" showTagline={true} clientName={clientParam} />
+            <SentientLogo size="sm" showTagline={true} clientName={clientParam} textColor={darkMode ? '#E8EDF2' : '#0D1318'} mutedColor={darkMode ? '#2E4050' : '#8FA0AE'} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 11, fontWeight: 700, color: th.textPrimary }}>{timeStr}</div>
