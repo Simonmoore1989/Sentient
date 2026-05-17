@@ -6,13 +6,14 @@ import SentientLogo from './components/SentientLogo';
 
 export default function Home() {
   const [client, setClient] = useState('');
+  const [site, setSite] = useState('');
   const [revision, setRevision] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [showUploadTooltip, setShowUploadTooltip] = useState(false);
   const router = useRouter();
 
-  const isReady = client && revision && file;
+  const isReady = client && site && revision && file;
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
@@ -99,6 +100,18 @@ export default function Home() {
                 style={{
                   ...fieldStyle,
                   border: `1px solid ${client ? 'rgba(46,204,154,0.3)' : '#1E2A35'}`,
+                }}
+              />
+
+              {/* Site */}
+              <input
+                type="text"
+                placeholder="SITE NAME"
+                value={site}
+                onChange={e => setSite(e.target.value)}
+                style={{
+                  ...fieldStyle,
+                  border: `1px solid ${site ? 'rgba(46,204,154,0.3)' : '#1E2A35'}`,
                 }}
               />
 
@@ -312,7 +325,7 @@ export default function Home() {
                       const { data: { user } } = await supabase.auth.getUser();
                       const { data: shutdown } = await supabase
                         .from('shutdowns')
-                        .insert({ client, revision, user_id: user?.id })
+                        .insert({ client, site, revision, user_id: user?.id })
                         .select()
                         .single();
 

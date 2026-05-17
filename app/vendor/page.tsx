@@ -313,9 +313,19 @@ function VendorField() {
     const anyOpDelayed = updatedOpsWithDelay.some((op: any) => op.status === 'DELAYED');
     const newStatus = anyOpDelayed ? 'DELAYED' : newProgress === 100 ? 'COMPLETE' : newProgress > 0 ? 'IN PROGRESS' : 'PENDING';
 
+    const now = new Date().toISOString();
+    const taskUpdate: any = { progress: newProgress, status: newStatus, ops: updatedOpsWithDelay };
+
+    if (!task.actual_start && (newStatus === 'IN PROGRESS' || newStatus === 'DELAYED') && newProgress > 0) {
+      taskUpdate.actual_start = now;
+    }
+    if (!task.actual_finish && newStatus === 'COMPLETE') {
+      taskUpdate.actual_finish = now;
+    }
+
     const { error } = await supabase
       .from('tasks')
-      .update({ progress: newProgress, status: newStatus, ops: updatedOpsWithDelay })
+      .update(taskUpdate)
       .eq('id', taskId)
       .eq('shutdown_id', task.shutdown_id);
 
