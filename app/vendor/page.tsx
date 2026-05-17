@@ -326,6 +326,7 @@ function VendorField() {
         .from('tasks')
         .select('*')
         .eq('id', taskId)
+        .eq('shutdown_id', task.shutdown_id)
         .single();
       if (refreshed) setTasks(prev => prev.map(t => t.id === taskId ? refreshed : t));
     }
