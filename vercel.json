@@ -1,5 +1,4 @@
 {
-  "//": "Sentient cron config v2",
   "crons": [
     {
       "path": "/api/cron/notify",
