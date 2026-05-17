@@ -1,4 +1,4 @@
-// v2
+// Cron notify route v2
 export const dynamic = 'force-dynamic';
 
 import { NextRequest } from 'next/server';
