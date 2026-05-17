@@ -36,7 +36,7 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public routes — allow through unauthenticated
-  if (pathname === '/login' || pathname === '/admin/login' || pathname.startsWith('/vendor') || pathname.startsWith('/api/cron')) {
+  if (pathname === '/login' || pathname === '/admin/login' || pathname === '/manifest.json' || pathname.startsWith('/vendor') || pathname.startsWith('/api/cron')) {
     return supabaseResponse;
   }
 
