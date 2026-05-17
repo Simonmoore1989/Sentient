@@ -144,6 +144,7 @@ export default function VendorSetup() {
     const client = localStorage.getItem('client') || '';
     let url = `${base}/vendor?teams=${selectedTeams.map(t => encodeURIComponent(t)).join('%2C')}`;
     if (client) url += `&client=${client}`;
+    if (currentShutdownId) url += `&shutdownId=${currentShutdownId}`;
     if (name) url += `&name=${encodeURIComponent(name)}`;
     if (role) url += `&role=${encodeURIComponent(role)}`;
     return url;

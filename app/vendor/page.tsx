@@ -38,6 +38,7 @@ function VendorField() {
   const rawName = searchParams.get('name') || '';
   const rawRole = searchParams.get('role') || '';
   const rawClient = decodeURIComponent(searchParams.get('client') || '');
+  const rawShutdownId = searchParams.get('shutdownId') || '';
   const focusTaskId = searchParams.get('taskId') || '';
   const focusOpIndex = searchParams.get('opIndex') !== null ? parseInt(searchParams.get('opIndex')!, 10) : -1;
 
@@ -46,9 +47,11 @@ function VendorField() {
     if (rawTeams) setCookie('supervisor_teams', rawTeams);
     if (rawRole) setCookie('supervisor_role', rawRole);
     if (rawClient) setCookie('supervisor_client', rawClient);
-  }, [rawName, rawTeams, rawRole, rawClient]);
+    if (rawShutdownId) setCookie('supervisor_shutdownId', rawShutdownId);
+  }, [rawName, rawTeams, rawRole, rawClient, rawShutdownId]);
 
   const teamsParam = rawTeams || getCookie('supervisor_teams');
+  const resolvedShutdownId = rawShutdownId || getCookie('supervisor_shutdownId');
   const teamIds = teamsParam.split(',').filter(Boolean);
   const supervisorName = rawName || getCookie('supervisor_name');
   const supervisorRole = rawRole || getCookie('supervisor_role');
@@ -81,21 +84,14 @@ function VendorField() {
 
   useEffect(() => {
     async function loadTasks() {
-      const { data: shutdownData } = await supabase
-        .from('shutdowns')
-        .select('id')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
       let allTasks: any[] = [];
 
-      if (shutdownData) {
-        setShutdownId(shutdownData.id);
+      if (resolvedShutdownId) {
+        setShutdownId(resolvedShutdownId);
         const { data: supabaseTasks } = await supabase
           .from('tasks')
           .select('*')
-          .eq('shutdown_id', shutdownData.id);
+          .eq('shutdown_id', resolvedShutdownId);
         if (supabaseTasks) allTasks = supabaseTasks;
       } else {
         const storedTasks = localStorage.getItem('tasks');
@@ -153,19 +149,13 @@ function VendorField() {
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_KEY!)
           });
-          const { data: shutdownData } = await supabase
-            .from('shutdowns')
-            .select('id')
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
-          if (shutdownData) {
+          if (resolvedShutdownId) {
             await supabase.from('supervisors').upsert({
               name: supervisorName,
               role: supervisorRole,
               team: teamsParam,
               push_token: JSON.stringify(subscription),
-              shutdown_id: shutdownData.id,
+              shutdown_id: resolvedShutdownId,
             }, { onConflict: 'name,shutdown_id' });
           }
           setPushRegistered(true);
@@ -407,14 +397,13 @@ function VendorField() {
                     userVisibleOnly: true,
                     applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_KEY!)
                   });
-                  const { data: shutdownData } = await supabase.from('shutdowns').select('id').order('created_at', { ascending: false }).limit(1).single();
-                  if (shutdownData) {
+                  if (resolvedShutdownId) {
                     await supabase.from('supervisors').upsert({
                       name: supervisorName,
                       role: supervisorRole,
                       team: teamsParam,
                       push_token: JSON.stringify(subscription),
-                      shutdown_id: shutdownData.id,
+                      shutdown_id: resolvedShutdownId,
                     }, { onConflict: 'name,shutdown_id' });
                   }
                   setPushRegistered(true);
